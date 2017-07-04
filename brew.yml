@@ -1,0 +1,6 @@
+---
+# brew role
+
+- hosts: brew
+  roles:
+    - { role: brew }

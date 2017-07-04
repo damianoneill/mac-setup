@@ -1,0 +1,52 @@
+---
+# list of applications to install
+
+# homebrew applications
+applications:
+  - ag
+  - autojump
+  - cloc
+  - ctags
+  - ctop
+  - curl
+  - dos2unix
+  - fasd
+  - git
+  - git-extras
+  - git-flow
+  - go
+  - htop
+  - httpie
+  - kubectl
+  - kubernetes-cli
+  - maven
+  - net-snmp
+  - nmap
+  - rpm
+  - ssh-copy-id
+  - the_silver_searcher
+  - tiff2png
+  - tmux
+  - tree
+  - vim
+  - wget
+
+# homebrew cask applications
+cask_applications:
+  - 1password
+  - atom
+  - chicken
+  - cyberduck
+  - docker
+  - dropbox
+  - firefox
+  - google-chrome
+  - intellij-idea-ce
+  - iterm2
+  - skype
+  - slack
+  - spotify
+  - teamviewer
+  - vagrant
+  - virtualbox
+  - whatsapp
