@@ -1,5 +1,0 @@
----
-# Handlers for brew
-
-#- name: example restart
-#  action: service name=service state=restarted

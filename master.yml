@@ -1,4 +1,6 @@
 ---
 # master playbook
 
+- include: roles.yml
 - include: brew.yml
+- include: atom.yml
