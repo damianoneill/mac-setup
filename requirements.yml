@@ -1,3 +1,4 @@
 # Installed roles from the Ansible Galaxy
 - src: jgkim.atom
 - src: lidopaglia.homebrew
+- src: gantsign.visual-studio-code-extensions

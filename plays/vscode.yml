@@ -1,0 +1,11 @@
+- hosts: localhost
+  connection: local
+  roles:
+    - role: gantsign.visual-studio-code-extensions
+      users:
+        - username: 
+          visual_studio_code_extensions:
+            - lukehoban.Go
+            - redhat.java
+            - vscjava.vscode-java-debug
+            - vscjava.vscode-java-pack

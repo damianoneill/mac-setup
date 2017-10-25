@@ -4,3 +4,4 @@
 - include: plays/roles.yml
 - include: plays/brew.yml
 - include: plays/atom.yml
+- include: plays/vscode.yml

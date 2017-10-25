@@ -51,6 +51,7 @@
       - teamviewer
       - vagrant
       - virtualbox
+      - visual-studio-code
       - whatsapp
   roles:
     - lidopaglia.homebrew
