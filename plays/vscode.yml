@@ -9,3 +9,8 @@
             - redhat.java
             - vscjava.vscode-java-debug
             - vscjava.vscode-java-pack
+            - naereen.makefiles-support-for-vscode
+            - PeterJausovec.vscode-docker
+            - DavidAnson.vscode-markdownlint
+            - donjayamanne.githistory
+            - ipedrazas.kubernetes-snippets
