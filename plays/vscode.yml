@@ -6,9 +6,6 @@
         - username: "{{ansible_user_id}}"
           visual_studio_code_extensions:
             - lukehoban.Go
-            - redhat.java
-            - vscjava.vscode-java-debug
-            - vscjava.vscode-java-pack
             - naereen.makefiles-support-for-vscode
             - PeterJausovec.vscode-docker
             - DavidAnson.vscode-markdownlint
