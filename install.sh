@@ -24,8 +24,8 @@ fi
 
 
 brew tap caskroom/cask
-brew install ag autojump bash-git-prompt cloc ctags ctop curl dos2unix fasd git git-extras git-flow go htop httpie kubectl kubernetes-cli net-snmp nmap pass rpm ssh-copy-id the_silver_searcher tiff2png tmux tree vim wget
-brew cask install chicken cyberduck docker dropbox balenaetcher firefox google-chrome iterm2 skype slack spotify teamviewer vagrant visual-studio-code whatsapp opera virtualbox
+brew install ag autojump bash-git-prompt cloc ctags ctop curl dos2unix fasd git git-extras git-flow go hub htop httpie kubectl kubernetes-cli net-snmp nmap pass rpm ssh-copy-id the_silver_searcher tiff2png tmux tree vim wget
+brew cask install chicken cyberduck docker dropbox balenaetcher firefox google-chrome iterm2 kindle skype slack spotify teamviewer vagrant visual-studio-code whatsapp opera virtualbox
 
 # add completions for the above applications
 grep -qxF 'source <(kubectl completion bash)'  ~/.bash_profile
