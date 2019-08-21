@@ -1,30 +1,9 @@
 # mac-setup
 
-## Homebrew
-The solution is dependent on homebrew
+This solution will install homebrew and then use brew to install the depdenencies.  At various points homebrew may ask you for your password. 
 
-````
-$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-$ brew tap caskroom/cask
-````
+Note at the end Virtualbox will fail, as it needs permissions granted for oracle before installing the software, it will provide the location of the change you require.
 
-## Ansible
-Install Ansbile
-
-````
-$ brew install ansible
-````
-
-## Ansible Galaxy
-Use Galaxy to install the dependent roles
-
-````
-$ ansible-galaxy install -r requirements.yml
-````
-
-## Run the installation
-Then to run the local installation. 
-
-````
-ansible-playbook master.yml --ask-become-pass
-````
+```sh
+./install.sh
+```

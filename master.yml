@@ -1,6 +1,0 @@
----
-# master playbook
-
-- include: plays/roles.yml
-- include: plays/brew.yml
-- include: plays/vscode.yml
