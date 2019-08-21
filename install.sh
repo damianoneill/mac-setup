@@ -24,7 +24,7 @@ fi
 
 
 brew tap caskroom/cask
-brew install ag autojump bash-git-prompt cloc ctags ctop curl dos2unix fasd git git-extras git-flow go hub htop httpie kubectl kubernetes-cli net-snmp nmap pass rpm ssh-copy-id the_silver_searcher tiff2png tmux tree vim wget
+brew install ag autojump bash-git-prompt cloc ctags ctop curl dos2unix fasd git git-extras git-flow go hub htop httpie kubectl kubernetes-cli net-snmp nmap node nvm openssl pass rpm ssh-copy-id the_silver_searcher tiff2png tmux tree vim wget http://git.io/sshpass.rb
 brew cask install chicken cyberduck docker dropbox balenaetcher firefox google-chrome iterm2 java kindle skype slack spotify teamviewer vagrant visual-studio-code whatsapp opera virtualbox
 
 # add completions for the above applications
@@ -37,5 +37,8 @@ if [ -f "/usr/local/opt/bash-git-prompt/share/gitprompt.sh" ]; then
     source "/usr/local/opt/bash-git-prompt/share/gitprompt.sh"
 fi
 [ -f /usr/local/etc/profile.d/autojump.sh ] && . /usr/local/etc/profile.d/autojump.sh
+export NVM_DIR="$HOME/.nvm"
+[ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+[ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
 EOT
 fi
