@@ -35,8 +35,6 @@
     homebrew_taps:
       - caskroom/cask
     homebrew_cask_apps:
-      - 1password
-      - atom
       - chicken
       - cyberduck
       - docker
