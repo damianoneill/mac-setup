@@ -23,9 +23,8 @@ EOT
 fi
 
 
-brew tap caskroom/cask
-brew install ag autojump bash-git-prompt cloc ctags ctop curl derailed/k9s/k9s dos2unix fasd git git-extras git-flow go helmfile hub htop httpie kubectl kubernetes-cli net-snmp nmap node nvm openssl pass rpm ssh-copy-id the_silver_searcher tig tiff2png tmux tree vim wget http://git.io/sshpass.rb
-brew cask install chicken cyberduck docker dropbox balenaetcher firefox google-chrome iterm2 java kindle skype slack spotify teamviewer vagrant visual-studio-code whatsapp opera virtualbox
+brew install ag autojump bash-git-prompt cloc ctags ctop curl derailed/k9s/k9s dos2unix fasd git git-extras git-flow go helmfile hub htop httpie kubectl kubernetes-cli net-snmp nmap node nvm openssl pass rpm ssh-copy-id the_silver_searcher tig tiff2png tmux tree vim wget 
+brew install chicken cyberduck docker dropbox balenaetcher firefox google-chrome iterm2 java kindle skype slack spotify teamviewer vagrant visual-studio-code whatsapp opera virtualbox
 
 # add completions for the above applications
 grep -qxF 'source <(kubectl completion bash)'  ~/.bash_profile
