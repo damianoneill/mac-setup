@@ -23,7 +23,7 @@ EOT
 fi
 
 
-brew install ag autojump bash-git-prompt cloc ctags ctop curl derailed/k9s/k9s dos2unix fasd git git-extras git-flow go helmfile hub htop httpie kubectl kubernetes-cli net-snmp nmap node nvm openssl pass rpm socat ssh-copy-id the_silver_searcher tig tiff2png tmux tree vim wget xquartz
+brew install ag autojump bash-git-prompt cloc ctags ctop curl derailed/k9s/k9s dos2unix fasd git git-extras git-flow go helmfile hub htop httpie kubectl kubernetes-cli net-snmp nmap node nvm openssl pass pyenv rpm socat ssh-copy-id the_silver_searcher tig tiff2png tmux tree vim wget xquartz
 brew install chicken cyberduck docker dropbox balenaetcher firefox google-chrome iterm2 java kindle skype slack spotify teamviewer vagrant visual-studio-code whatsapp opera virtualbox
 
 # add completions for the above applications
@@ -40,6 +40,12 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
 [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
 EOT
+fi
+
+grep -qxF 'export PYENV_ROOT='  ~/.bash_profile
+if [ $? -ne 0 ]; then
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+echo 'export PATH="$PYENV_ROOT/shims:$PATH"' >> ~/.bash_profile
 fi
 
 npm install --global git-open
