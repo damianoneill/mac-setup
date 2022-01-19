@@ -140,5 +140,12 @@ if [ ! -d "$FONTS_DIR" ]; then
   rm -rf fonts
 fi
 
+ALACRITTY_DIR="$HOME/.config/alacritty"
+if [ ! -d "$ALACRITTY_DIR" ]; then
+  echo ">>> Installing alacritty standard configuration in ${ALACRITTY_DIR}"
+  mkdir -p "$ALACRITTY_DIR"
+  wget -O "$ALACRITTY_DIR"/alacritty.yml https://github.com/alacritty/alacritty/releases/download/v0.9.0/alacritty.yml
+fi
+
 echo ">>> Dry run of topgrade, checking to see if software needs updated"
 topgrade -n
