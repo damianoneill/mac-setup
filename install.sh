@@ -13,6 +13,7 @@ while true; do
     shell=zsh
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     grep -qxF '. /usr/local/opt/asdf/libexec/asdf.sh' ~/.zshrc || echo '. /usr/local/opt/asdf/libexec/asdf.sh' >>~/.zshrc
+    grep -qxF '. ~/.asdf/plugins/java/set-java-home.zsh' ~/.zshrc || echo '. ~/.asdf/plugins/java/set-java-home.zsh' >>~/.zshrc
     break
     ;;
   bash)
@@ -20,6 +21,7 @@ while true; do
     touch ~/.bashrc
     touch ~/.bash_profile
     grep -qxF '. /usr/local/opt/asdf/libexec/asdf.sh' ~/.bash_profile || echo '. /usr/local/opt/asdf/libexec/asdf.sh' >>~/.bash_profile
+    grep -qxF '. ~/.asdf/plugins/java/set-java-home.bash' ~/.bashrc || echo '. ~/.asdf/plugins/java/set-java-home.zsh' >>~/.bashrc
     break
     ;;
   *)
@@ -93,6 +95,8 @@ brew install --no-quarantine "${productivity[@]}"
 brew install --no-quarantine "${kubernetes[@]}"
 brew install --no-quarantine "${guiApps[@]}"
 
+touch ~/.asdfrc
+grep -qxF 'java_macos_integration_enable = yes' ~/.asdfrc || echo 'java_macos_integration_enable = yes' >>~/.asdfrc
 . /usr/local/opt/asdf/libexec/asdf.sh
 
 JDK_VER=adoptopenjdk-openj9-8.0.292+10.openj9-0.26.0
