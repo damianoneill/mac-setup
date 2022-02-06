@@ -14,6 +14,8 @@ while true; do
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     grep -qxF '. /usr/local/opt/asdf/libexec/asdf.sh' ~/.zshrc || echo '. /usr/local/opt/asdf/libexec/asdf.sh' >>~/.zshrc
     grep -qxF '. ~/.asdf/plugins/java/set-java-home.zsh' ~/.zshrc || echo '. ~/.asdf/plugins/java/set-java-home.zsh' >>~/.zshrc
+    grep -qxF "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" ~/.zshrc || echo "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" >>~/.zshrc
+    grep -qxF 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' ~/.zshrc || echo 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' >>~/.zshrc
     break
     ;;
   bash)
@@ -52,20 +54,23 @@ declare -a toolsAlternative=(
 )
 
 declare -a productivity=(
-  "topgrade"        # system updater - https://github.com/r-darwish/topgrade
-  "asdf"            # software tools version manager - https://github.com/asdf-vm/asdf
-  "cloc"            # count lines of code - https://github.com/AlDanial/cloc
-  "universal-ctags" # maintained implementation of ctags - https://github.com/universal-ctags/ctags
-  "ctop"            # Top-like interface for container metrics - https://github.com/bcicen/ctop
-  "curl"            # Get a file from an HTTP, HTTPS or FTP server - https://curl.se
-  "dos2unix"        # Convert text between DOS, UNIX, and Mac formats - https://waterlan.home.xs4all.nl/dos2unix.html
-  "git"             # Distributed revision control system - https://git-scm.com
-  "git-extras"      # Small git utilities - https://github.com/tj/git-extras
-  "nmap"            # Port scanning utility - https://nmap.org/
-  "pass"            # Password manager - https://www.passwordstore.org/
-  "tree"            # Display directories as trees - http://mama.indstate.edu/users/ice/tree/
-  "wget"            # Internet file retriever - https://www.gnu.org/software/wget/
-  "xquartz"         # Open-source version of the X.Org X Window System - https://www.xquartz.org/
+  "topgrade"                 # system updater - https://github.com/r-darwish/topgrade
+  "asdf"                     # software tools version manager - https://github.com/asdf-vm/asdf
+  "cloc"                     # count lines of code - https://github.com/AlDanial/cloc
+  "universal-ctags"          # maintained implementation of ctags - https://github.com/universal-ctags/ctags
+  "ctop"                     # Top-like interface for container metrics - https://github.com/bcicen/ctop
+  "curl"                     # Get a file from an HTTP, HTTPS or FTP server - https://curl.se
+  "dos2unix"                 # Convert text between DOS, UNIX, and Mac formats - https://waterlan.home.xs4all.nl/dos2unix.html
+  "git"                      # Distributed revision control system - https://git-scm.com
+  "git-extras"               # Small git utilities - https://github.com/tj/git-extras
+  "nmap"                     # Port scanning utility - https://nmap.org/
+  "pass"                     # Password manager - https://www.passwordstore.org/
+  "tree"                     # Display directories as trees - http://mama.indstate.edu/users/ice/tree/
+  "wget"                     # Internet file retriever - https://www.gnu.org/software/wget/
+  "xquartz"                  # Open-source version of the X.Org X Window System - https://www.xquartz.org/
+  "jq"                       # Lightweight and flexible command-line JSON processor - https://stedolan.github.io/jq/
+  "docker-credential-helper" # macOS Credential Helper for Docker - https://github.com/docker/docker-credential-helpers
+  "fzf"                      # Command-line fuzzy finder written in Go - https://github.com/junegunn/fzf
 )
 
 # most kubernetes tools are versioned using asdf, see below.
@@ -98,6 +103,8 @@ brew install --no-quarantine "${guiApps[@]}"
 touch ~/.asdfrc
 grep -qxF 'java_macos_integration_enable = yes' ~/.asdfrc || echo 'java_macos_integration_enable = yes' >>~/.asdfrc
 . /usr/local/opt/asdf/libexec/asdf.sh
+
+$(brew --prefix)/opt/fzf/install --all
 
 JDK_VER=adoptopenjdk-openj9-8.0.292+10.openj9-0.26.0
 asdf plugin-add java https://github.com/halcyon/asdf-java.git
