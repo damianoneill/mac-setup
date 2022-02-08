@@ -40,7 +40,7 @@ echo ">>> Configured for $shell"
 
 declare -a terminal=(
   "zsh"       # UNIX shell (command interpreter) - https://www.zsh.org/
-  "alacritty" # terminal emulator - https://github.com/alacritty/alacritty
+  "iterm2" # terminal emulator - https://www.iterm2.com/
   "tmux"      # terminal multiplexer - https://github.com/tmux/tmux
   "neovim"    # Vim-based text editor - https://neovim.io/
 )
@@ -146,20 +146,6 @@ if [ ! -d "$FONTS_DIR" ]; then
   cd ..
   rm -rf fonts
 fi
-
-ALACRITTY_DIR="$HOME/.config/alacritty"
-if [ ! -d "$ALACRITTY_DIR" ]; then
-  echo ">>> Installing alacritty standard configuration in ${ALACRITTY_DIR}"
-  mkdir -p "$ALACRITTY_DIR"
-  wget -O "$ALACRITTY_DIR"/alacritty.yml https://github.com/alacritty/alacritty/releases/download/v0.9.0/alacritty.yml
-fi
-
-# Setup Terminfo for alacritty
-git clone https://github.com/alacritty/alacritty.git
-cd alacritty
-sudo tic -xe alacritty,alacritty-direct extra/alacritty.info
-cd .. && rm -rf alacritty
-
 
 echo ">>> Dry run of topgrade, checking to see if software needs updated"
 topgrade -n
