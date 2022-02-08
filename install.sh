@@ -154,5 +154,12 @@ if [ ! -d "$ALACRITTY_DIR" ]; then
   wget -O "$ALACRITTY_DIR"/alacritty.yml https://github.com/alacritty/alacritty/releases/download/v0.9.0/alacritty.yml
 fi
 
+# Setup Terminfo for alacritty
+git clone https://github.com/alacritty/alacritty.git
+cd alacritty
+sudo tic -xe alacritty,alacritty-direct extra/alacritty.info
+cd .. && rm -rf alacritty
+
+
 echo ">>> Dry run of topgrade, checking to see if software needs updated"
 topgrade -n
