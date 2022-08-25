@@ -12,8 +12,6 @@ while true; do
   zsh)
     shell=zsh
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    grep -qxF '. /usr/local/opt/asdf/libexec/asdf.sh' ~/.zshrc || echo '. /usr/local/opt/asdf/libexec/asdf.sh' >>~/.zshrc
-    grep -qxF '. ~/.asdf/plugins/java/set-java-home.zsh' ~/.zshrc || echo '. ~/.asdf/plugins/java/set-java-home.zsh' >>~/.zshrc
     grep -qxF "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" ~/.zshrc || echo "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" >>~/.zshrc
     grep -qxF 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' ~/.zshrc || echo 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' >>~/.zshrc
     break
@@ -22,8 +20,6 @@ while true; do
     shell=bash
     touch ~/.bashrc
     touch ~/.bash_profile
-    grep -qxF '. /usr/local/opt/asdf/libexec/asdf.sh' ~/.bash_profile || echo '. /usr/local/opt/asdf/libexec/asdf.sh' >>~/.bash_profile
-    grep -qxF '. ~/.asdf/plugins/java/set-java-home.bash' ~/.bashrc || echo '. ~/.asdf/plugins/java/set-java-home.zsh' >>~/.bashrc
     break
     ;;
   *)
@@ -102,14 +98,9 @@ brew install --no-quarantine "${guiApps[@]}"
 
 touch ~/.asdfrc
 grep -qxF 'java_macos_integration_enable = yes' ~/.asdfrc || echo 'java_macos_integration_enable = yes' >>~/.asdfrc
-. /usr/local/opt/asdf/libexec/asdf.sh
+. $(brew --prefix)/opt/asdf/libexec/asdf.sh
 
 $(brew --prefix)/opt/fzf/install --all
-
-JDK_VER=adoptopenjdk-openj9-8.0.292+10.openj9-0.26.0
-asdf plugin-add java https://github.com/halcyon/asdf-java.git
-asdf install java $JDK_VER
-asdf global java $JDK_VER
 
 GO_VER=1.17.6
 asdf plugin-add golang https://github.com/kennyp/asdf-golang.git
