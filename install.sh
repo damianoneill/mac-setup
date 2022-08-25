@@ -125,10 +125,10 @@ asdf install kubectl $KUBECTL_VER
 asdf global kubectl $KUBECTL_VER
 
 # install node binaries
-declare -a nodeModules=(
-  "meta" # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
-)
-npm i -g "${nodeModules[@]}"
+# declare -a nodeModules=(
+#   "meta" # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
+# )
+# npm i -g "${nodeModules[@]}"
 
 # install vs code extensions
 declare -a vscodeExts=(
