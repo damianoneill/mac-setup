@@ -12,6 +12,7 @@ while true; do
   zsh)
     shell=zsh
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.zshrc || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.zshrc
     grep -qxF "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" ~/.zshrc || echo "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" >>~/.zshrc
     grep -qxF 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' ~/.zshrc || echo 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' >>~/.zshrc
     break
@@ -20,6 +21,7 @@ while true; do
     shell=bash
     touch ~/.bashrc
     touch ~/.bash_profile
+    grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.bash_profile || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.bash_profile
     break
     ;;
   *)
