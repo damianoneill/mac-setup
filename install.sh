@@ -86,7 +86,7 @@ declare -a guiApps=(
   "teamviewer"         # Remote access and connectivity software focused on security - https://www.teamviewer.com/
   "visual-studio-code" # Open-source code editor - https://code.visualstudio.com/
   "whatsapp"           # Desktop client for WhatsApp - https://www.whatsapp.com/
-  "virtualbox"         # Virtualizer for x86 hardware - https://www.virtualbox.org/
+  # "virtualbox"         # Virtualizer for x86 hardware - https://www.virtualbox.org/
 )
 
 # brew tap "${taps[@]}"
