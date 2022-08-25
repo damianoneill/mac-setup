@@ -76,7 +76,7 @@ declare -a kubernetes=(
 
 declare -a guiApps=(
   "dropbox"            # Client for the Dropbox cloud storage service - https://www.dropbox.com/
-  "docker"             # App to build and share containerized applications and microservices - https://www.docker.com/products/docker-desktop
+#  "docker"             # App to build and share containerized applications and microservices - https://www.docker.com/products/docker-desktop
   "firefox"            # Web browser - https://www.mozilla.org/firefox/
   "google-chrome"      # Web browser - https://www.google.com/chrome/
   "kindle"             # Interface for reading and syncing eBooks - https://www.amazon.com/gp/digital/fiona/kcp-landing-page
