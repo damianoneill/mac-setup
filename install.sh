@@ -142,7 +142,8 @@ npm install -g npm@latest
 
 # install node binaries
 declare -a nodeModules=(
-  "meta" # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
+  "meta"        # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
+  "git-open"    # Type git open to open the repo website (GitHub, GitLab, Bitbucket) in your browser. - https://github.com/paulirish/git-open
 )
 npm i -g "${nodeModules[@]}"
 
