@@ -15,6 +15,7 @@ while true; do
     grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.zshrc || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.zshrc
     grep -qxF "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" ~/.zshrc || echo "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" >>~/.zshrc
     grep -qxF 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' ~/.zshrc || echo 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' >>~/.zshrc
+    grep -qxF '. $(brew --prefix)/etc/profile.d/z.sh' ~/.zshrc || echo '. $(brew --prefix)/etc/profile.d/z.sh' >>~/.zshrc
     break
     ;;
   bash)
@@ -22,6 +23,7 @@ while true; do
     touch ~/.bashrc
     touch ~/.bash_profile
     grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.bash_profile || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.bash_profile
+    grep -qxF '. $(brew --prefix)/etc/profile.d/z.sh' ~/.bash_profile || echo '. $(brew --prefix)/etc/profile.d/z.sh' >>~/.bash_profile
     break
     ;;
   *)
@@ -69,6 +71,7 @@ declare -a productivity=(
   "jq"                       # Lightweight and flexible command-line JSON processor - https://stedolan.github.io/jq/
   "docker-credential-helper" # macOS Credential Helper for Docker - https://github.com/docker/docker-credential-helpers
   "fzf"                      # Command-line fuzzy finder written in Go - https://github.com/junegunn/fzf
+  "z"                        # Tracks your most used directories, based on 'frecency' - https://github.com/rupa/z
 )
 
 # most kubernetes tools are versioned using asdf, see below.
@@ -77,7 +80,7 @@ declare -a kubernetes=(
 )
 
 declare -a guiApps=(
-  "dropbox"            # Client for the Dropbox cloud storage service - https://www.dropbox.com/
+#  "dropbox"            # Client for the Dropbox cloud storage service - https://www.dropbox.com/
 #  "docker"             # App to build and share containerized applications and microservices - https://www.docker.com/products/docker-desktop
   "firefox"            # Web browser - https://www.mozilla.org/firefox/
   "google-chrome"      # Web browser - https://www.google.com/chrome/
