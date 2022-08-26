@@ -130,6 +130,13 @@ asdf plugin-add kubectl https://github.com/Banno/asdf-kubectl.git
 asdf install kubectl $KUBECTL_VER
 asdf global kubectl $KUBECTL_VER
 
+DIRENV_VER=latest
+asdf plugin-add direnv https://github.com/asdf-community/asdf-direnv.git
+asdf install direnv $DIRENV_VER
+asdf global direnv $DIRENV_VER
+touch ~/.envrc
+grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
+
 # on Apple silcon, needed update before installing meta
 npm install -g npm@latest
 
