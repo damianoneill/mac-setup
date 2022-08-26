@@ -4,6 +4,8 @@ if ! [ -x "$(command -v brew)" ]; then
   /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
 
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
 shell=zsh
 while true; do
   read -r -p '>>> What shell are you using? bash or [zsh]: ' answer
@@ -108,7 +110,7 @@ grep -qxF 'java_macos_integration_enable = yes' ~/.asdfrc || echo 'java_macos_in
 
 $(brew --prefix)/opt/fzf/install --all
 
-GO_VER=1.17.6
+GO_VER=1.17.13
 asdf plugin-add golang https://github.com/kennyp/asdf-golang.git
 asdf install golang $GO_VER
 asdf global golang $GO_VER
@@ -118,21 +120,24 @@ asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git
 asdf install nodejs $NODE_VER
 asdf global nodejs $NODE_VER
 
-PYTHON_VER=3.10.2
+PYTHON_VER=3.10.6
 asdf plugin-add python https://github.com/danhper/asdf-python.git
 asdf install python $PYTHON_VER
 asdf global python $PYTHON_VER
 
-KUBECTL_VER=1.23.1
+KUBECTL_VER=1.25.0
 asdf plugin-add kubectl https://github.com/Banno/asdf-kubectl.git
 asdf install kubectl $KUBECTL_VER
 asdf global kubectl $KUBECTL_VER
 
+# on Apple silcon, needed update before installing meta
+npm install -g npm@latest
+
 # install node binaries
-# declare -a nodeModules=(
-#   "meta" # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
-# )
-# npm i -g "${nodeModules[@]}"
+declare -a nodeModules=(
+  "meta" # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
+)
+npm i -g "${nodeModules[@]}"
 
 # install vs code extensions
 declare -a vscodeExts=(
