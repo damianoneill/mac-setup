@@ -61,6 +61,7 @@ declare -a productivity=(
   "ctop"                     # Top-like interface for container metrics - https://github.com/bcicen/ctop
   "curl"                     # Get a file from an HTTP, HTTPS or FTP server - https://curl.se
   "dos2unix"                 # Convert text between DOS, UNIX, and Mac formats - https://waterlan.home.xs4all.nl/dos2unix.html
+  "docker-compose"           # Isolated development environments using Docker - https://docs.docker.com/compose/
   "git"                      # Distributed revision control system - https://git-scm.com
   "git-extras"               # Small git utilities - https://github.com/tj/git-extras
   "nmap"                     # Port scanning utility - https://nmap.org/
