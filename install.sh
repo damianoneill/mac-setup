@@ -151,6 +151,11 @@ npm i -g "${nodeModules[@]}"
 # install vs code extensions
 declare -a vscodeExts=(
   "ms-vscode-remote.remote-ssh" # Remote - use any remote machine with a SSH server as your development environment - https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh
+  "foxundermoon.shell-format"
+  "golang.go"
+  "ms-azuretools.vscode-docker"
+  "ms-vscode.makefile-tools"
+  "shd101wyy.markdown-preview-enhanced"
 )
 code --install-extension "${vscodeExts[@]}"
 
