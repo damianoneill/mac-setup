@@ -36,15 +36,11 @@ done
 
 echo ">>> Configured for $shell"
 
-# declare -a taps=(
-
-# )
-
 declare -a terminal=(
-  "zsh"       # UNIX shell (command interpreter) - https://www.zsh.org/
+  "zsh"    # UNIX shell (command interpreter) - https://www.zsh.org/
   "iterm2" # terminal emulator - https://www.iterm2.com/
-  "tmux"      # terminal multiplexer - https://github.com/tmux/tmux
-  "neovim"    # Vim-based text editor - https://neovim.io/
+  "tmux"   # terminal multiplexer - https://github.com/tmux/tmux
+  "neovim" # Vim-based text editor - https://neovim.io/
 )
 
 declare -a toolsAlternative=(
@@ -85,8 +81,8 @@ declare -a kubernetes=(
 )
 
 declare -a guiApps=(
-#  "dropbox"            # Client for the Dropbox cloud storage service - https://www.dropbox.com/
-#  "docker"             # App to build and share containerized applications and microservices - https://www.docker.com/products/docker-desktop
+  #  "dropbox"            # Client for the Dropbox cloud storage service - https://www.dropbox.com/
+  #  "docker"             # App to build and share containerized applications and microservices - https://www.docker.com/products/docker-desktop
   "firefox"            # Web browser - https://www.mozilla.org/firefox/
   "google-chrome"      # Web browser - https://www.google.com/chrome/
   "kindle"             # Interface for reading and syncing eBooks - https://www.amazon.com/gp/digital/fiona/kcp-landing-page
@@ -99,9 +95,20 @@ declare -a guiApps=(
   # "virtualbox"         # Virtualizer for x86 hardware - https://www.virtualbox.org/
 )
 
+# https://www.macstadium.com/blog/install-asdf-on-macos - tcl-tk required to resolve tk issue on osx
+declare -a pythonDeps=(
+  "tcl-tk"   # Tool Command Language - https://www.tcl-lang.org
+  "readline" # Library for commandline editing - https://tiswww.case.edu/php/chet/readline/rltop.html
+  "zlib"     # General-purpose lossless data-compression library - https://zlib.net/
+  "openssl"  # Cryptography and SSL/TLS Toolkit - https://openssl.org/
+  "sqlite3"  # Command-line interface for SQLite - https://sqlite.org/index.html
+  "xz"       # General-purpose data compression with high compression ratio - https://tukaani.org/xz/
+)
+
 # brew tap "${taps[@]}"
 brew install --no-quarantine "${terminal[@]}"
 brew install --no-quarantine "${toolsAlternative[@]}"
+brew install --no-quarantine "${pythonDeps[@]}"
 brew install --no-quarantine "${productivity[@]}"
 brew install --no-quarantine "${kubernetes[@]}"
 brew install --no-quarantine "${guiApps[@]}"
@@ -112,7 +119,7 @@ grep -qxF 'java_macos_integration_enable = yes' ~/.asdfrc || echo 'java_macos_in
 
 $(brew --prefix)/opt/fzf/install --all
 
-GO_VER=1.17.13
+GO_VER=latest
 asdf plugin-add golang https://github.com/kennyp/asdf-golang.git
 asdf install golang $GO_VER
 asdf global golang $GO_VER
@@ -122,7 +129,7 @@ asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git
 asdf install nodejs $NODE_VER
 asdf global nodejs $NODE_VER
 
-PYTHON_VER=3.10.6
+PYTHON_VER=latest
 asdf plugin-add python https://github.com/danhper/asdf-python.git
 asdf install python $PYTHON_VER
 asdf global python $PYTHON_VER
@@ -144,8 +151,8 @@ npm install -g npm@latest
 
 # install node binaries
 declare -a nodeModules=(
-  "meta"        # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
-  "git-open"    # Type git open to open the repo website (GitHub, GitLab, Bitbucket) in your browser. - https://github.com/paulirish/git-open
+  "meta"     # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
+  "git-open" # Type git open to open the repo website (GitHub, GitLab, Bitbucket) in your browser. - https://github.com/paulirish/git-open
 )
 npm i -g "${nodeModules[@]}"
 
@@ -158,6 +165,7 @@ declare -a vscodeExts=(
   "ms-vscode.makefile-tools"
   "shd101wyy.markdown-preview-enhanced"
   "timonwong.shellcheck"
+  "znck.grammarly"
 )
 code --install-extension "${vscodeExts[@]}"
 
@@ -173,3 +181,5 @@ fi
 
 echo ">>> Dry run of topgrade, checking to see if software needs updated"
 topgrade -n
+
+echo ">>> install docker and dropbox manually"
