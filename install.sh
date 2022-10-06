@@ -73,6 +73,8 @@ declare -a productivity=(
   "docker-credential-helper" # macOS Credential Helper for Docker - https://github.com/docker/docker-credential-helpers
   "fzf"                      # Command-line fuzzy finder written in Go - https://github.com/junegunn/fzf
   "z"                        # Tracks your most used directories, based on 'frecency' - https://github.com/rupa/z
+  "dive"                     # Tool for exploring each layer in a docker image - https://github.com/wagoodman/dive
+  "tig"                      # text-mode interface for Git - http://jonas.github.io/tig/
 )
 
 # most kubernetes tools are versioned using asdf, see below.
