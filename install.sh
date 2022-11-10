@@ -65,6 +65,7 @@ declare -a productivity=(
   "nmap"                     # Port scanning utility - https://nmap.org/
   "pass"                     # Password manager - https://www.passwordstore.org/
   "shellcheck"               # Shell Linter - https://www.shellcheck.net/
+  "telnet"                   # Telnet - User interface to the TELNET protocol
   "the_silver_searcher"      # Code-search similar to ack - https://github.com/ggreer/the_silver_searcher
   "tree"                     # Display directories as trees - http://mama.indstate.edu/users/ice/tree/
   "wget"                     # Internet file retriever - https://www.gnu.org/software/wget/
