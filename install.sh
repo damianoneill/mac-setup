@@ -18,6 +18,7 @@ while true; do
     grep -qxF "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" ~/.zshrc || echo "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" >>~/.zshrc
     grep -qxF 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' ~/.zshrc || echo 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' >>~/.zshrc
     grep -qxF '. $(brew --prefix)/etc/profile.d/z.sh' ~/.zshrc || echo '. $(brew --prefix)/etc/profile.d/z.sh' >>~/.zshrc
+    grep -qxF 'export PATH="${PATH}:${HOME}/.krew/bin"' ~/.zshrc || echo 'export PATH="${PATH}:${HOME}/.krew/bin"' >>~/.zshrc
     break
     ;;
   bash)
@@ -26,6 +27,7 @@ while true; do
     touch ~/.bash_profile
     grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.bash_profile || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.bash_profile
     grep -qxF '. $(brew --prefix)/etc/profile.d/z.sh' ~/.bash_profile || echo '. $(brew --prefix)/etc/profile.d/z.sh' >>~/.bash_profile
+    grep -qxF 'export PATH="${PATH}:${HOME}/.krew/bin"' ~/.bash_profile || echo 'export PATH="${PATH}:${HOME}/.krew/bin"' >>~/.bash_profile
     break
     ;;
   *)
@@ -141,6 +143,18 @@ KUBECTL_VER=1.25.0
 asdf plugin-add kubectl https://github.com/Banno/asdf-kubectl.git
 asdf install kubectl $KUBECTL_VER
 asdf global kubectl $KUBECTL_VER
+
+KREW_VER=v0.4.3
+asdf plugin-add krew https://github.com/nlamirault/asdf-krew.git
+asdf install krew $KREW_VER
+asdf global krew $KREW_VER
+export PATH="${PATH}:${HOME}/.krew/bin"
+krew install krew
+declare -a krews=(
+  "tail"   # streams logs from all containers of all matched pods
+)
+kubectl krew install "${krews[@]}"
+
 
 DIRENV_VER=latest
 asdf plugin-add direnv https://github.com/asdf-community/asdf-direnv.git
