@@ -157,9 +157,18 @@ kubectl krew install "${krews[@]}"
 
 
 DIRENV_VER=latest
-asdf plugin-add direnv https://github.com/asdf-community/asdf-direnv.git
-asdf install direnv $DIRENV_VER
-asdf global direnv $DIRENV_VER
+asdf plugin-add direnv
+# run the right setup for your shell
+if [ "$shell" == "bash" ]; then
+  asdf direnv setup --shell bash --version latest
+else
+  asdf direnv setup --shell zsh --version latest
+fi
+
+# turn off direnv logging
+mkdir -p ~/.config/direnv
+grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc || echo 'export DIRENV_LOG_FORMAT=""' >> ~/.config/direnv/direnvrc
+
 touch ~/.envrc
 grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
 
