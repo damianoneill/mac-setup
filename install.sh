@@ -192,6 +192,8 @@ declare -a vscodeExts=(
   "shd101wyy.markdown-preview-enhanced"
   "timonwong.shellcheck"
   "znck.grammarly"
+  "ms-python.python"
+  "d-biehl.robotcode"
 )
 code --install-extension "${vscodeExts[@]}"
 
