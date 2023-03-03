@@ -57,6 +57,7 @@ declare -a productivity=(
   "topgrade"                 # system updater - https://github.com/r-darwish/topgrade
   "asdf"                     # software tools version manager - https://github.com/asdf-vm/asdf
   "cloc"                     # count lines of code - https://github.com/AlDanial/cloc
+  "chromedriver"             # automated testing of webapps for Google Chrome - https://sites.google.com/chromium.org/driver/
   "universal-ctags"          # maintained implementation of ctags - https://github.com/universal-ctags/ctags
   "ctop"                     # Top-like interface for container metrics - https://github.com/bcicen/ctop
   "curl"                     # Get a file from an HTTP, HTTPS or FTP server - https://curl.se
@@ -138,6 +139,11 @@ PYTHON_VER=latest
 asdf plugin-add python https://github.com/danhper/asdf-python.git
 asdf install python $PYTHON_VER
 asdf global python $PYTHON_VER
+
+POETRY_VER=1.3.2
+asdf plugin-add poetry https://github.com/asdf-community/asdf-poetry.git
+asdf install poetry $POETRY_VER
+asdf global poetry $POETRY_VER
 
 KUBECTL_VER=1.25.0
 asdf plugin-add kubectl https://github.com/Banno/asdf-kubectl.git
