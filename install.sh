@@ -200,6 +200,7 @@ declare -a vscodeExts=(
   "znck.grammarly"
   "ms-python.python"
   "d-biehl.robotcode"
+  "vivaxy.vscode-conventional-commits"
 )
 code --install-extension "${vscodeExts[@]}"
 
