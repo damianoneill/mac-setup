@@ -39,6 +39,7 @@ done
 echo ">>> Configured for $shell"
 
 declare -a terminal=(
+  "bash"   # Bourne-again SHell, a UNIX command interpreter - https://www.gnu.org/software/bash/
   "zsh"    # UNIX shell (command interpreter) - https://www.zsh.org/
   "iterm2" # terminal emulator - https://www.iterm2.com/
   "tmux"   # terminal multiplexer - https://github.com/tmux/tmux
@@ -74,6 +75,7 @@ declare -a productivity=(
   "wget"                     # Internet file retriever - https://www.gnu.org/software/wget/
   "xquartz"                  # Open-source version of the X.Org X Window System - https://www.xquartz.org/
   "jq"                       # Lightweight and flexible command-line JSON processor - https://stedolan.github.io/jq/
+  "python-yq"               # Command-line YAML processor - https://kislyuk.github.io/yq/
   "docker-credential-helper" # macOS Credential Helper for Docker - https://github.com/docker/docker-credential-helpers
   "fzf"                      # Command-line fuzzy finder written in Go - https://github.com/junegunn/fzf
   "z"                        # Tracks your most used directories, based on 'frecency' - https://github.com/rupa/z
@@ -83,6 +85,7 @@ declare -a productivity=(
 
 # most kubernetes tools are versioned using asdf, see below.
 declare -a kubernetes=(
+  "k3d" # Kubernetes cluster manager - https://k3d.io
   "k9s" # Kubernetes CLI To Manage Clusters - https://k9scli.io/
 )
 
@@ -140,15 +143,30 @@ asdf plugin-add python https://github.com/danhper/asdf-python.git
 asdf install python $PYTHON_VER
 asdf global python $PYTHON_VER
 
+JAVA_VER=openjdk-18.0.1
+asdf plugin-add java https://github.com/halcyon/asdf-java.git
+asdf install java $JAVA_VER
+asdf global java $JAVA_VER
+
 POETRY_VER=1.3.2
 asdf plugin-add poetry https://github.com/asdf-community/asdf-poetry.git
 asdf install poetry $POETRY_VER
 asdf global poetry $POETRY_VER
 
+TRIVY_VER=latest
+asdf plugin-add trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
+asdf install trivy $TRIVY_VER
+asdf global trivy $TRIVY_VER
+
 KUBECTL_VER=1.25.0
 asdf plugin-add kubectl https://github.com/Banno/asdf-kubectl.git
 asdf install kubectl $KUBECTL_VER
 asdf global kubectl $KUBECTL_VER
+
+HELM_VER=3.8.2
+asdf plugin-add helm https://github.com/Antiarchitect/asdf-helm.git
+asdf install helm $HELM_VER
+asdf global helm $HELM_VER
 
 KREW_VER=v0.4.3
 asdf plugin-add krew https://github.com/nlamirault/asdf-krew.git
@@ -157,10 +175,9 @@ asdf global krew $KREW_VER
 export PATH="${PATH}:${HOME}/.krew/bin"
 krew install krew
 declare -a krews=(
-  "tail"   # streams logs from all containers of all matched pods
+  "tail" # streams logs from all containers of all matched pods
 )
 kubectl krew install "${krews[@]}"
-
 
 DIRENV_VER=latest
 asdf plugin-add direnv
@@ -173,7 +190,7 @@ fi
 
 # turn off direnv logging
 mkdir -p ~/.config/direnv
-grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc || echo 'export DIRENV_LOG_FORMAT=""' >> ~/.config/direnv/direnvrc
+grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc || echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
 
 touch ~/.envrc
 grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
