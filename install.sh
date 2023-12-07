@@ -215,7 +215,8 @@ declare -a vscodeExts=(
   "shd101wyy.markdown-preview-enhanced"
   "timonwong.shellcheck"
   "znck.grammarly"
-  "ms-python.python"
+  "donjayamanne.python-extension-pack"
+  "p403n1x87.austin-vscode"
   "d-biehl.robotcode"
   "vivaxy.vscode-conventional-commits"
 )
