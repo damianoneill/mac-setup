@@ -1,238 +1,159 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
 
-if ! [ -x "$(command -v brew)" ]; then
-  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+# Install Homebrew (Apple Silicon only)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Put Homebrew on PATH
+eval "$("$(which brew)" shellenv)"
+
+# Install Bash 5.x via Homebrew, allow-list it, and switch default shell
+brew install bash
+BREW_BASH="$(brew --prefix)/bin/bash"
+if ! grep -Fxq "$BREW_BASH" /etc/shells; then
+  echo "$BREW_BASH" | sudo tee -a /etc/shells
 fi
+chsh -s "$BREW_BASH"
+echo ">>> Default shell set to $BREW_BASH (Bash $(bash --version | head -n1))"
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
-
-shell=zsh
-while true; do
-  read -r -p '>>> What shell are you using? bash or [zsh]: ' answer
-  answer=${answer:-zsh}
-  case "$answer" in
-  zsh)
-    shell=zsh
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.zshrc || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.zshrc
-    grep -qxF "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" ~/.zshrc || echo "export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'" >>~/.zshrc
-    grep -qxF 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' ~/.zshrc || echo 'export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"' >>~/.zshrc
-    grep -qxF '. $(brew --prefix)/etc/profile.d/z.sh' ~/.zshrc || echo '. $(brew --prefix)/etc/profile.d/z.sh' >>~/.zshrc
-    grep -qxF 'export PATH="${PATH}:${HOME}/.krew/bin"' ~/.zshrc || echo 'export PATH="${PATH}:${HOME}/.krew/bin"' >>~/.zshrc
-    break
-    ;;
-  bash)
-    shell=bash
-    touch ~/.bashrc
-    touch ~/.bash_profile
-    grep -qxF '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' ~/.bash_profile || echo '. $(brew --prefix)/opt/asdf/libexec/asdf.sh' >>~/.bash_profile
-    grep -qxF '. $(brew --prefix)/etc/profile.d/z.sh' ~/.bash_profile || echo '. $(brew --prefix)/etc/profile.d/z.sh' >>~/.bash_profile
-    grep -qxF 'export PATH="${PATH}:${HOME}/.krew/bin"' ~/.bash_profile || echo 'export PATH="${PATH}:${HOME}/.krew/bin"' >>~/.bash_profile
-    break
-    ;;
-  *)
-    printf "%s\n" 'Answer either “zsh” or “bash”.'
-    ;;
-  esac
-done
-
-echo ">>> Configured for $shell"
-
+# 🛠️ Tools categories with comments for clarity
 declare -a terminal=(
-  "bash"   # Bourne-again SHell, a UNIX command interpreter - https://www.gnu.org/software/bash/
-  "zsh"    # UNIX shell (command interpreter) - https://www.zsh.org/
-  "iterm2" # terminal emulator - https://www.iterm2.com/
-  "tmux"   # terminal multiplexer - https://github.com/tmux/tmux
-  "neovim" # Vim-based text editor - https://neovim.io/
+  "iterm2" # Terminal emulator
+  "tmux"   # Terminal multiplexer
+  "neovim" # Vim-based editor
 )
 
 declare -a toolsAlternative=(
-  "lsd"  # instead of ls - https://github.com/Peltoche/lsd
-  "bat"  # instead of cat - https://github.com/sharkdp/bat
-  "fd"   # instead of find - https://github.com/sharkdp/fd
-  "rg"   # instead of grep - https://github.com/BurntSushi/ripgrep
-  "htop" # instead of top - https://htop.dev/
+  "lsd"  # ls replacement with pretty colors
+  "bat"  # cat with syntax highlighting
+  "fd"   # find ultra-fast alternative
+  "rg"   # ripgrep, grep on steroids
+  "htop" # interactive process viewer
 )
 
 declare -a productivity=(
-  "topgrade"                 # system updater - https://github.com/r-darwish/topgrade
-  "asdf"                     # software tools version manager - https://github.com/asdf-vm/asdf
-  "cloc"                     # count lines of code - https://github.com/AlDanial/cloc
-  "chromedriver"             # automated testing of webapps for Google Chrome - https://sites.google.com/chromium.org/driver/
-  "universal-ctags"          # maintained implementation of ctags - https://github.com/universal-ctags/ctags
-  "ctop"                     # Top-like interface for container metrics - https://github.com/bcicen/ctop
-  "curl"                     # Get a file from an HTTP, HTTPS or FTP server - https://curl.se
-  "dos2unix"                 # Convert text between DOS, UNIX, and Mac formats - https://waterlan.home.xs4all.nl/dos2unix.html
-  "docker-compose"           # Isolated development environments using Docker - https://docs.docker.com/compose/
-  "git"                      # Distributed revision control system - https://git-scm.com
-  "git-extras"               # Small git utilities - https://github.com/tj/git-extras
-  "nmap"                     # Port scanning utility - https://nmap.org/
-  "pass"                     # Password manager - https://www.passwordstore.org/
-  "shellcheck"               # Shell Linter - https://www.shellcheck.net/
-  "telnet"                   # Telnet - User interface to the TELNET protocol
-  "the_silver_searcher"      # Code-search similar to ack - https://github.com/ggreer/the_silver_searcher
-  "tree"                     # Display directories as trees - http://mama.indstate.edu/users/ice/tree/
-  "wget"                     # Internet file retriever - https://www.gnu.org/software/wget/
-  "xquartz"                  # Open-source version of the X.Org X Window System - https://www.xquartz.org/
-  "jq"                       # Lightweight and flexible command-line JSON processor - https://stedolan.github.io/jq/
-  "python-yq"               # Command-line YAML processor - https://kislyuk.github.io/yq/
-  "docker-credential-helper" # macOS Credential Helper for Docker - https://github.com/docker/docker-credential-helpers
-  "fzf"                      # Command-line fuzzy finder written in Go - https://github.com/junegunn/fzf
-  "z"                        # Tracks your most used directories, based on 'frecency' - https://github.com/rupa/z
-  "dive"                     # Tool for exploring each layer in a docker image - https://github.com/wagoodman/dive
-  "tig"                      # text-mode interface for Git - http://jonas.github.io/tig/
+  "topgrade"                 # unified updater
+  "asdf"                     # version manager
+  "cloc"                     # code line counter
+  "chromedriver"             # Chrome WebDriver
+  "universal-ctags"          # code symbol indexer
+  "ctop"                     # live container metrics
+  "curl"                     # data transfer
+  "dos2unix"                 # remove Windows line endings
+  "docker-compose"           # container orchestration
+  "git"                      # version control
+  "git-extras"               # useful Git extensions
+  "nmap"                     # network scanner
+  "pass"                     # password manager
+  "shellcheck"               # shell script linter
+  "telnet"                   # network debugging tool
+  "the_silver_searcher"      # fast code search
+  "tree"                     # directory tree visualizer
+  "wget"                     # file downloader
+  "xquartz"                  # X11 for macOS
+  "jq"                       # JSON processor
+  "python-yq"                # YAML processor
+  "docker-credential-helper" # credential storage for Docker
+  "fzf"                      # fuzzy finder
+  "z"                        # directory jumper
+  "dive"                     # Docker image explorer
+  "tig"                      # text-mode Git UI
 )
 
-# most kubernetes tools are versioned using asdf, see below.
 declare -a kubernetes=(
-  "k3d" # Kubernetes cluster manager - https://k3d.io
-  "k9s" # Kubernetes CLI To Manage Clusters - https://k9scli.io/
+  "k3d" # Kubernetes in Docker
+  "k9s" # CLI Kubernetes dashboard
 )
 
 declare -a guiApps=(
-  #  "dropbox"            # Client for the Dropbox cloud storage service - https://www.dropbox.com/
-  #  "docker"             # App to build and share containerized applications and microservices - https://www.docker.com/products/docker-desktop
-  "firefox"            # Web browser - https://www.mozilla.org/firefox/
-  "google-chrome"      # Web browser - https://www.google.com/chrome/
-  "kindle"             # Interface for reading and syncing eBooks - https://www.amazon.com/gp/digital/fiona/kcp-landing-page
-  "skype"              # Video chat, voice call and instant messaging application - https://www.skype.com/
-  "slack"              # Team communication and collaboration software - https://slack.com/
-  "spotify"            # Music streaming service - https://www.spotify.com/
-  "teamviewer"         # Remote access and connectivity software focused on security - https://www.teamviewer.com/
-  "visual-studio-code" # Open-source code editor - https://code.visualstudio.com/
-  "whatsapp"           # Desktop client for WhatsApp - https://www.whatsapp.com/
-  # "virtualbox"         # Virtualizer for x86 hardware - https://www.virtualbox.org/
+  "firefox"            # web browser
+  "google-chrome"      # web browser
+  "brave-browser"      # privacy-focused browser
+  "slack"              # team chat
+  "spotify"            # music streaming
+  "teamviewer"         # remote desktop
+  "visual-studio-code" # code editor
+  "whatsapp"           # messaging app
 )
 
-# https://www.macstadium.com/blog/install-asdf-on-macos - tcl-tk required to resolve tk issue on osx
-declare -a pythonDeps=(
-  "tcl-tk"   # Tool Command Language - https://www.tcl-lang.org
-  "readline" # Library for commandline editing - https://tiswww.case.edu/php/chet/readline/rltop.html
-  "zlib"     # General-purpose lossless data-compression library - https://zlib.net/
-  "openssl"  # Cryptography and SSL/TLS Toolkit - https://openssl.org/
-  "sqlite3"  # Command-line interface for SQLite - https://sqlite.org/index.html
-  "xz"       # General-purpose data compression with high compression ratio - https://tukaani.org/xz/
-)
+# Install all via Homebrew
+brew install --no-quarantine "${terminal[@]}" \
+  "${toolsAlternative[@]}" \
+  "${productivity[@]}" \
+  "${kubernetes[@]}" \
+  "${guiApps[@]}"
 
-# brew tap "${taps[@]}"
-brew install --no-quarantine "${terminal[@]}"
-brew install --no-quarantine "${toolsAlternative[@]}"
-brew install --no-quarantine "${pythonDeps[@]}"
-brew install --no-quarantine "${productivity[@]}"
-brew install --no-quarantine "${kubernetes[@]}"
-brew install --no-quarantine "${guiApps[@]}"
+# Source asdf & run fzf installer
+source "$(brew --prefix)/opt/asdf/libexec/asdf.sh"
+"$(brew --prefix)/opt/fzf/install" --all
 
-touch ~/.asdfrc
-grep -qxF 'java_macos_integration_enable = yes' ~/.asdfrc || echo 'java_macos_integration_enable = yes' >>~/.asdfrc
-. $(brew --prefix)/opt/asdf/libexec/asdf.sh
+# Helper to install asdf plugins safely
+install_asdf_plugin() {
+  plugin="$1"
+  repo="$2"
+  version="${3:-latest}"
+  if ! asdf plugin-list | grep -qx "$plugin"; then
+    asdf plugin-add "$plugin" "$repo"
+  fi
+  asdf install "$plugin" "$version"
+  asdf global "$plugin" "$version"
+}
 
-$(brew --prefix)/opt/fzf/install --all
+install_asdf_plugin golang https://github.com/kennyp/asdf-golang.git
+install_asdf_plugin nodejs https://github.com/asdf-vm/asdf-nodejs.git
+install_asdf_plugin python https://github.com/danhper/asdf-python.git
+install_asdf_plugin java https://github.com/halcyon/asdf-java.git
+install_asdf_plugin poetry https://github.com/asdf-community/asdf-poetry.git
+install_asdf_plugin trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
+install_asdf_plugin kubectl https://github.com/Banno/asdf-kubectl.git
+install_asdf_plugin helm https://github.com/Antiarchitect/asdf-helm.git
+install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git
 
-GO_VER=latest
-asdf plugin-add golang https://github.com/kennyp/asdf-golang.git
-asdf install golang $GO_VER
-asdf global golang $GO_VER
-
-NODE_VER=lts-fermium
-asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git
-asdf install nodejs $NODE_VER
-asdf global nodejs $NODE_VER
-
-PYTHON_VER=latest
-asdf plugin-add python https://github.com/danhper/asdf-python.git
-asdf install python $PYTHON_VER
-asdf global python $PYTHON_VER
-
-JAVA_VER=openjdk-18.0.1
-asdf plugin-add java https://github.com/halcyon/asdf-java.git
-asdf install java $JAVA_VER
-asdf global java $JAVA_VER
-
-POETRY_VER=1.3.2
-asdf plugin-add poetry https://github.com/asdf-community/asdf-poetry.git
-asdf install poetry $POETRY_VER
-asdf global poetry $POETRY_VER
-
-TRIVY_VER=latest
-asdf plugin-add trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
-asdf install trivy $TRIVY_VER
-asdf global trivy $TRIVY_VER
-
-KUBECTL_VER=1.25.0
-asdf plugin-add kubectl https://github.com/Banno/asdf-kubectl.git
-asdf install kubectl $KUBECTL_VER
-asdf global kubectl $KUBECTL_VER
-
-HELM_VER=3.8.2
-asdf plugin-add helm https://github.com/Antiarchitect/asdf-helm.git
-asdf install helm $HELM_VER
-asdf global helm $HELM_VER
-
-KREW_VER=v0.4.3
-asdf plugin-add krew https://github.com/nlamirault/asdf-krew.git
-asdf install krew $KREW_VER
-asdf global krew $KREW_VER
 export PATH="${PATH}:${HOME}/.krew/bin"
-krew install krew
-declare -a krews=(
-  "tail" # streams logs from all containers of all matched pods
-)
-kubectl krew install "${krews[@]}"
+kubectl krew install tail
 
-DIRENV_VER=latest
-asdf plugin-add direnv
-# run the right setup for your shell
-if [ "$shell" == "bash" ]; then
-  asdf direnv setup --shell bash --version latest
-else
-  asdf direnv setup --shell zsh --version latest
-fi
-
-# turn off direnv logging
+# Set up direnv via asdf + logging off
+install_asdf_plugin direnv "" latest
+asdf direnv setup --shell bash --version latest
 mkdir -p ~/.config/direnv
-grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc || echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
-
+grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
+  echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
 touch ~/.envrc
 grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
 
-# on Apple silcon, needed update before installing meta
-npm install -g npm@latest
+# Update npm and install global node tools
+npm install -g npm@latest meta git-open
 
-# install node binaries
-declare -a nodeModules=(
-  "meta"     # tool for managing multi-projects - https://github.com/mateodelnorte/meta-npm
-  "git-open" # Type git open to open the repo website (GitHub, GitLab, Bitbucket) in your browser. - https://github.com/paulirish/git-open
+# Install VS Code extensions
+vscodeExts=(
+  "ms-vscode-remote.remote-ssh"         # Develop directly on remote machines via SSH
+  "foxundermoon.shell-format"           # Formats shell scripts (e.g., YAML, Bash)
+  "golang.go"                           # Go language support: IntelliSense, debugging, code navigation
+  "ms-azuretools.vscode-docker"         # Docker and Azure Container tooling
+  "ms-vscode.makefile-tools"            # Provides IntelliSense and build support for Makefiles
+  "shd101wyy.markdown-preview-enhanced" # Rich Markdown preview with diagram support and LaTeX
+  "timonwong.shellcheck"                # Integrates ShellCheck linting into VS Code
+  "znck.grammarly"                      # Grammarly integration for spelling and grammar checking
+  "donjayamanne.python-extension-pack"  # Bundled set of essential Python extensions
+  "d-biehl.robotcode"                   # Support and language features for Robot Framework
+  "vivaxy.vscode-conventional-commits"  # Enforces Conventional Commits standard
+  "charliermarsh.ruff"                  # Fast Python linter & formatter (Rust-based)
 )
-npm i -g "${nodeModules[@]}"
+for ext in "${vscodeExts[@]}"; do
+  code --install-extension "$ext" || echo "⚠️ Could not install VS Code extension $ext"
+done
 
-# install vs code extensions
-declare -a vscodeExts=(
-  "ms-vscode-remote.remote-ssh" # Remote - use any remote machine with a SSH server as your development environment - https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh
-  "foxundermoon.shell-format"
-  "golang.go"
-  "ms-azuretools.vscode-docker"
-  "ms-vscode.makefile-tools"
-  "shd101wyy.markdown-preview-enhanced"
-  "timonwong.shellcheck"
-  "znck.grammarly"
-  "donjayamanne.python-extension-pack"
-  "p403n1x87.austin-vscode"
-  "d-biehl.robotcode"
-  "vivaxy.vscode-conventional-commits"
-)
-code --install-extension "${vscodeExts[@]}"
-
+# Install Powerline fonts if needed
 FONTS_DIR="$HOME/Library/Fonts"
-if [ ! -d "$FONTS_DIR" ]; then
-  echo ">>> Installing powerline fonts in ${FONTS_DIR} useful for on my zsh themes"
-  git clone https://github.com/powerline/fonts.git --depth=1
-  cd fonts || exit
-  ./install.sh
-  cd ..
-  rm -rf fonts
+if [[ ! -d "$FONTS_DIR" ]]; then
+  echo ">>> Installing Powerline fonts"
+  git clone https://github.com/powerline/fonts.git --depth=1 /tmp/fonts
+  /tmp/fonts/install.sh
+  rm -rf /tmp/fonts
 fi
 
-echo ">>> Dry run of topgrade, checking to see if software needs updated"
+echo ">>> Dry-run topgrade"
 topgrade -n
 
-echo ">>> install docker and dropbox manually"
+echo ">>> Please manually install Docker Desktop"

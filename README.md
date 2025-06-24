@@ -2,7 +2,7 @@
 
 This solution will install homebrew and then use brew to install the dependencies. At various point's homebrew may ask you for your password.
 
-It defaults to zsh and installs [oh my zsh](https://github.com/ohmyzsh/ohmyzsh) if not present.
+Use latest version of bash on homebrew, will set this up as the default shell, and install some common tools and languages.
 
 [asdf](https://github.com/asdf-vm/asdf) is used as the version manager, it installs the following language plugins and some default versions for each language:
 
