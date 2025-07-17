@@ -3,133 +3,112 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # ----------------------------------------
-# Install Homebrew (Apple Silicon only)
+# Check and install Homebrew (Apple Silicon only)
 # ----------------------------------------
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+if ! command -v brew &>/dev/null; then
+  echo ">>> Installing Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+else
+  echo "✅ Homebrew already installed."
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
 
-# Add Homebrew to PATH for this script session
-eval "$("$(which brew)" shellenv)"
-
-# ------------------------------------------------
-# Install Bash 5.x via Homebrew and allow-list
-# ------------------------------------------------
-brew install bash
+# ----------------------------------------
+# Install updated Bash, but use Zsh as default shell
+# ----------------------------------------
+brew install bash || true
 BREW_BASH="$(brew --prefix)/bin/bash"
 if ! grep -Fxq "$BREW_BASH" /etc/shells; then
   echo "$BREW_BASH" | sudo tee -a /etc/shells
 fi
 
-# -----------------------------------------------------
-# Define categorized packages to install via Homebrew
-# -----------------------------------------------------
-declare -a terminal=(
-  "iterm2" # Terminal emulator
-  "tmux"   # Terminal multiplexer
-  "neovim" # Vim-based editor
-)
+if [[ "$SHELL" != "$(which zsh)" ]]; then
+  echo ">>> Setting default shell to zsh..."
+  chsh -s "$(which zsh)"
+else
+  echo "✅ Default shell is already zsh."
+fi
 
-declare -a toolsAlternative=(
-  "lsd"  # ls replacement with pretty colors
-  "bat"  # cat with syntax highlighting
-  "fd"   # find ultra-fast alternative
-  "rg"   # ripgrep, grep on steroids
-  "htop" # interactive process viewer
-)
+# ----------------------------------------
+# Install Zsh tools & improvements
+# ----------------------------------------
+brew install zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide || true
 
+ZSHRC="$HOME/.zshrc"
+
+add_to_zshrc() {
+  local line="$1"
+  grep -qxF "$line" "$ZSHRC" || echo "$line" >> "$ZSHRC"
+}
+
+add_to_zshrc 'eval "$(starship init zsh)"'
+add_to_zshrc 'eval "$(zoxide init zsh)"'
+add_to_zshrc 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
+add_to_zshrc 'source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh'
+add_to_zshrc 'fpath+=("$(brew --prefix)/share/zsh-completions")'
+add_to_zshrc 'autoload -Uz compinit && compinit'
+
+# -------------------------------------
+# Homebrew apps to install
+# -------------------------------------
+declare -a terminal=(iterm2 tmux neovim)
+declare -a toolsAlternative=(lsd bat fd rg htop)
 declare -a productivity=(
-  "topgrade"                 # unified updater
-  "asdf"                     # version manager
-  "cloc"                     # code line counter
-  "chromedriver"             # Chrome WebDriver
-  "universal-ctags"          # code symbol indexer
-  "ctop"                     # live container metrics
-  "curl"                     # data transfer
-  "dos2unix"                 # remove Windows line endings
-  "docker-compose"           # container orchestration
-  "git"                      # version control
-  "git-extras"               # useful Git extensions
-  "nmap"                     # network scanner
-  "pass"                     # password manager
-  "shellcheck"              # shell script linter
-  "telnet"                   # network debugging tool
-  "the_silver_searcher"      # fast code search
-  "tree"                     # directory tree visualizer
-  "wget"                     # file downloader
-  "xquartz"                  # X11 for macOS
-  "jq"                       # JSON processor
-  "python-yq"                # YAML processor
-  "docker-credential-helper" # credential storage for Docker
-  "fzf"                      # fuzzy finder
-  "z"                        # directory jumper
-  "dive"                     # Docker image explorer
-  "tig"                      # text-mode Git UI
+  topgrade asdf cloc chromedriver universal-ctags ctop curl dos2unix
+  docker-compose git git-extras nmap pass shellcheck telnet
+  the_silver_searcher tree wget xquartz jq python-yq
+  docker-credential-helper fzf z dive tig
 )
-
-declare -a kubernetes=(
-  "k3d" # Kubernetes in Docker
-  "k9s" # CLI Kubernetes dashboard
-)
-
+declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
-  "firefox"            # web browser
-  "google-chrome"      # web browser
-  "brave-browser"      # privacy-focused browser
-  "slack"              # team chat
-  "spotify"            # music streaming
-  "teamviewer"         # remote desktop
-  "visual-studio-code" # code editor
-  "whatsapp"           # messaging app
+  firefox lazygit google-chrome brave-browser slack
+  spotify teamviewer visual-studio-code whatsapp
+)
+declare -a testTools=(
+  pre-commit vale hadolint
 )
 
-# -------------------------------------
-# Install all apps and tools via brew
-# -------------------------------------
+# Fix: combine all arrays properly for one brew install command
 brew install --no-quarantine "${terminal[@]}" \
   "${toolsAlternative[@]}" \
   "${productivity[@]}" \
   "${kubernetes[@]}" \
-  "${guiApps[@]}"
+  "${guiApps[@]}" \
+  "${testTools[@]}" || true
 
-# ----------------------------------------------
-# Update shell config for zsh (default shell)
-# ----------------------------------------------
-ZSHRC="$HOME/.zshrc"
+# -------------------------------------
+# Add runtime tool support to zshrc
+# -------------------------------------
+add_to_zshrc 'source "$(brew --prefix asdf)/libexec/asdf.sh"'
+add_to_zshrc '[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh'
+add_to_zshrc 'eval "$(direnv hook zsh)"'
 
-# Load asdf
-ASDF_INIT='source "$(brew --prefix asdf)/libexec/asdf.sh"'
-grep -qxF "$ASDF_INIT" "$ZSHRC" || echo "$ASDF_INIT" >> "$ZSHRC"
-
-# Load fzf if installed
-FZF_INIT='[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh'
-grep -qxF "$FZF_INIT" "$ZSHRC" || echo "$FZF_INIT" >> "$ZSHRC"
-
-# Enable direnv
-DIRENV_INIT='eval "$(direnv hook zsh)"'
-grep -qxF "$DIRENV_INIT" "$ZSHRC" || echo "$DIRENV_INIT" >> "$ZSHRC"
-
-# ----------------------------------------
-# Source asdf & install fzf extras now
-# ----------------------------------------
+# -------------------------------------
+# Init tools for current session
+# -------------------------------------
 source "$(brew --prefix asdf)/libexec/asdf.sh"
 "$(brew --prefix)/opt/fzf/install" --all
 
-# ------------------------------------------------
-# Helper to install asdf plugins with defaults
-# ------------------------------------------------
+# -------------------------------------
+# Helper: install asdf plugin+version
+# -------------------------------------
 install_asdf_plugin() {
-  plugin="$1"
-  repo="$2"
-  version="${3:-latest}"
+  local plugin="$1"
+  local repo="$2"
+  local version="${3:-latest}"
   if ! asdf plugin-list | grep -qx "$plugin"; then
     asdf plugin-add "$plugin" "$repo"
   fi
-  asdf install "$plugin" "$version"
+  if ! asdf list "$plugin" | grep -qx "$version"; then
+    asdf install "$plugin" "$version"
+  fi
   asdf global "$plugin" "$version"
 }
 
-# ----------------------------------------
-# Install common asdf plugins & toolchains
-# ----------------------------------------
+# -------------------------------------
+# Install asdf toolchains (latest by default)
+# -------------------------------------
 install_asdf_plugin golang https://github.com/kennyp/asdf-golang.git
 install_asdf_plugin nodejs https://github.com/asdf-vm/asdf-nodejs.git
 install_asdf_plugin python https://github.com/danhper/asdf-python.git
@@ -143,69 +122,127 @@ install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git
 # -----------------------------------
 # Enable kubectl krew plugin support
 # -----------------------------------
-export PATH="${PATH}:${HOME}/.krew/bin"
-grep -qxF 'export PATH="$HOME/.krew/bin:$PATH"' "$ZSHRC" || echo 'export PATH="$HOME/.krew/bin:$PATH"' >> "$ZSHRC"
-kubectl krew install tail
+export PATH="${HOME}/.krew/bin:$PATH"
+add_to_zshrc 'export PATH="$HOME/.krew/bin:$PATH"'
+kubectl krew install tail || echo "krew tail already installed"
 
-# --------------------------------------------
-# Set up direnv with latest version via asdf
-# --------------------------------------------
+# -----------------------------------
+# Setup direnv and quiet output
+# -----------------------------------
 install_asdf_plugin direnv "" latest
 asdf direnv setup --shell zsh --version latest
 
-# Silence direnv logs
 mkdir -p ~/.config/direnv
 grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
   echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
 
-# Enable direnv in current directory
 touch ~/.envrc
 grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
 
 # --------------------------------------------
-# Upgrade npm and install global CLI tools
+# Upgrade npm and install global tools
 # --------------------------------------------
-npm install -g npm@latest meta git-open
+npm install -g npm@latest meta git-open typescript eslint prettier yarn || true
 
-# -------------------------------------
-# 🧩 Install VS Code extensions via CLI
-# -------------------------------------
+# --------------------------------------------
+# Install VS Code extensions
+# --------------------------------------------
 vscodeExts=(
-  "ms-vscode-remote.remote-ssh"         # Remote SSH development
-  "foxundermoon.shell-format"           # Shell script formatter
-  "golang.go"                           # Go language support
-  "ms-azuretools.vscode-docker"         # Docker + Azure support
-  "ms-vscode.makefile-tools"            # Makefile language tools
-  "shd101wyy.markdown-preview-enhanced" # Markdown live preview
-  "timonwong.shellcheck"                # Shell linting via ShellCheck
-  "znck.grammarly"                      # Grammarly integration
-  "donjayamanne.python-extension-pack"  # Python extensions
-  "d-biehl.robotcode"                   # Robot Framework support
-  "vivaxy.vscode-conventional-commits"  # Commit message formatting
-  "charliermarsh.ruff"                  # Fast Python linter (Rust)
+  "ms-vscode-remote.remote-ssh"
+  "foxundermoon.shell-format"
+  "golang.go"
+  "ms-azuretools.vscode-docker"
+  "ms-vscode.makefile-tools"
+  "shd101wyy.markdown-preview-enhanced"
+  "timonwong.shellcheck"
+  "znck.grammarly"
+  "donjayamanne.python-extension-pack"
+  "d-biehl.robotcode"
+  "vivaxy.vscode-conventional-commits"
+  "charliermarsh.ruff"
 )
 for ext in "${vscodeExts[@]}"; do
-  code --install-extension "$ext" || echo "⚠️ Could not install VS Code extension $ext"
+  if command -v code &>/dev/null; then
+    code --install-extension "$ext" || echo "⚠️ Could not install VS Code extension $ext"
+  else
+    echo "⚠️ VS Code CLI (code) not found, skipping extension installs"
+    break
+  fi
 done
 
-# ----------------------------------------
-# Install Powerline fonts for terminals
-# ----------------------------------------
-FONTS_DIR="$HOME/Library/Fonts"
-if [[ ! -d "$FONTS_DIR" ]]; then
+# --------------------------------------------
+# Install Powerline fonts if missing
+# --------------------------------------------
+POWERLINE_MARKER="DejaVu Sans Mono for Powerline"
+if ! fc-list 2>/dev/null | grep -qi "$POWERLINE_MARKER"; then
   echo ">>> Installing Powerline fonts"
   git clone https://github.com/powerline/fonts.git --depth=1 /tmp/fonts
   /tmp/fonts/install.sh
   rm -rf /tmp/fonts
 fi
 
-# --------------------------------------------------
-# Run topgrade in a *new login shell* (zsh-based)
-# --------------------------------------------------
-echo ">>> Running topgrade in a fresh login shell"
+# --------------------------------------------
+# Install LazyVim (backup first, idempotent)
+# --------------------------------------------
+NVIM_DIR="$HOME/.config/nvim"
+if [ ! -f "$NVIM_DIR/lua/lazyvim/init.lua" ]; then
+  echo ">>> Installing LazyVim..."
+  timestamp=$(date +%Y%m%d_%H%M%S)
+  [[ -d "$NVIM_DIR" ]] && mv "$NVIM_DIR" "${NVIM_DIR}_backup_$timestamp"
+  rm -rf ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim
+  git clone https://github.com/LazyVim/starter "$NVIM_DIR"
+  nvim --headless "+Lazy! sync" +qa
+else
+  echo "✅ LazyVim already installed, skipping."
+fi
+
+# --------------------------------------------
+# Generate SSH key if missing
+# --------------------------------------------
+SSH_KEY="$HOME/.ssh/id_ed25519"
+if [ ! -f "$SSH_KEY" ]; then
+  echo ">>> Generating new SSH key (ed25519)..."
+  ssh-keygen -t ed25519 -C "your_email@example.com" -f "$SSH_KEY" -N ""
+  echo ">>> SSH public key (add to GitHub/GitLab):"
+  cat "${SSH_KEY}.pub"
+else
+  echo "✅ SSH key already exists, skipping generation."
+fi
+
+# --------------------------------------------
+# MacOS system tweaks (idempotent)
+# --------------------------------------------
+echo ">>> Applying macOS defaults tweaks..."
+# Show all filename extensions in Finder
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+
+# Show hidden files by default
+defaults write com.apple.finder AppleShowAllFiles -bool true
+
+# Disable “Are you sure you want to open this application?” dialog
+defaults write com.apple.LaunchServices LSQuarantine -bool false
+
+# Set fast key repeat rate
+defaults write NSGlobalDomain KeyRepeat -int 1
+defaults write NSGlobalDomain InitialKeyRepeat -int 10
+
+# Restart Finder to apply changes
+killall Finder || true
+
+# --------------------------------------------
+# Cleanup Homebrew and asdf
+# --------------------------------------------
+echo ">>> Cleaning up Homebrew and asdf..."
+brew cleanup || true
+asdf reshim || true
+
+# --------------------------------------------
+# Final: run topgrade in fresh zsh shell
+# --------------------------------------------
+echo ">>> Running topgrade in fresh login shell..."
 /bin/zsh -l -c "topgrade"
 
-# --------------------------------------------------
-# Final note for manual install
-# --------------------------------------------------
-echo ">>> Please manually install Docker Desktop"
+# --------------------------------------------
+# Manual step reminder
+# --------------------------------------------
+echo "🧭 Please manually install Docker Desktop (GUI app)"
