@@ -14,6 +14,10 @@ else
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
+echo ">>> Fixing permissions for Homebrew directories to avoid zsh compinit warnings..."
+chmod g-w /opt/homebrew/share || true
+
+
 # ----------------------------------------
 # Install updated Bash and Zsh, set Zsh as default
 # ----------------------------------------
@@ -54,6 +58,7 @@ add_to_zshrc() {
   grep -qxF "$line" "$ZSHRC" || echo "$line" >> "$ZSHRC"
 }
 
+add_to_zshrc 'eval "$(/opt/homebrew/bin/brew shellenv)"'
 add_to_zshrc 'eval "$(starship init zsh)"'
 add_to_zshrc 'eval "$(zoxide init zsh)"'
 add_to_zshrc 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
