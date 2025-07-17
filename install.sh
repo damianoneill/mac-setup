@@ -3,6 +3,12 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # ----------------------------------------
+# Ask for sudo password up front and keep alive
+# ----------------------------------------
+sudo -v
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
+# ----------------------------------------
 # Check and install Homebrew (Apple Silicon only)
 # ----------------------------------------
 if ! command -v brew &>/dev/null; then
@@ -23,9 +29,12 @@ if ! grep -Fxq "$BREW_BASH" /etc/shells; then
   echo "$BREW_BASH" | sudo tee -a /etc/shells
 fi
 
-if [[ "$SHELL" != "$(which zsh)" ]]; then
+# Only change default shell if needed
+CURRENT_SHELL="$(dscl . -read "$HOME" UserShell | awk '{print $2}')"
+ZSH_PATH="$(which zsh)"
+if [[ "$CURRENT_SHELL" != "$ZSH_PATH" ]]; then
   echo ">>> Setting default shell to zsh..."
-  chsh -s "$(which zsh)"
+  chsh -s "$ZSH_PATH"
 else
   echo "✅ Default shell is already zsh."
 fi
@@ -69,7 +78,6 @@ declare -a testTools=(
   pre-commit vale hadolint
 )
 
-# Fix: combine all arrays properly for one brew install command
 brew install --no-quarantine "${terminal[@]}" \
   "${toolsAlternative[@]}" \
   "${productivity[@]}" \
@@ -213,20 +221,11 @@ fi
 # MacOS system tweaks (idempotent)
 # --------------------------------------------
 echo ">>> Applying macOS defaults tweaks..."
-# Show all filename extensions in Finder
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-
-# Show hidden files by default
 defaults write com.apple.finder AppleShowAllFiles -bool true
-
-# Disable “Are you sure you want to open this application?” dialog
 defaults write com.apple.LaunchServices LSQuarantine -bool false
-
-# Set fast key repeat rate
 defaults write NSGlobalDomain KeyRepeat -int 1
 defaults write NSGlobalDomain InitialKeyRepeat -int 10
-
-# Restart Finder to apply changes
 killall Finder || true
 
 # --------------------------------------------
