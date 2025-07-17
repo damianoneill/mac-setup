@@ -126,9 +126,24 @@ install_asdf_plugin() {
   fi
 
   # Install the version if not already installed
+  if [[ "$version" == "latest" ]]; then
+    # Try to get the actual latest version
+    echo ">>> Finding latest version for $plugin..."
+    actual_version=$(asdf latest "$plugin" 2>/dev/null || echo "")
+    if [[ -n "$actual_version" ]]; then
+      version="$actual_version"
+      echo ">>> Latest version for $plugin is: $version"
+    else
+      echo "⚠️ Could not determine latest version for $plugin, trying generic 'latest'"
+    fi
+  fi
+
   if ! asdf list "$plugin" 2>/dev/null | grep -qx "$version"; then
     echo ">>> Installing $plugin $version"
-    asdf install "$plugin" "$version"
+    if ! asdf install "$plugin" "$version"; then
+      echo "⚠️ Failed to install $plugin $version, skipping"
+      return 1
+    fi
   else
     echo "✅ $plugin $version already installed"
   fi
@@ -139,13 +154,34 @@ install_asdf_plugin() {
 }
 
 # -------------------------------------
-# Install asdf toolchains (latest by default)
+# Install asdf toolchains (with specific versions for problematic ones)
 # -------------------------------------
 echo ">>> Installing development languages via asdf..."
 install_asdf_plugin golang https://github.com/kennyp/asdf-golang.git
 install_asdf_plugin nodejs https://github.com/asdf-vm/asdf-nodejs.git
 install_asdf_plugin python https://github.com/danhper/asdf-python.git
-install_asdf_plugin java https://github.com/halcyon/asdf-java.git
+
+# Java requires specific version handling
+echo ">>> Installing Java..."
+if ! asdf plugin list | grep -qx "java"; then
+  echo ">>> Installing asdf plugin: java"
+  asdf plugin add java https://github.com/halcyon/asdf-java.git
+else
+  echo "✅ asdf plugin java already installed"
+fi
+
+# Get the latest LTS Java version
+LATEST_JAVA=$(asdf list all java | grep -E "openjdk-[0-9]+$" | tail -1 | tr -d ' ')
+if [[ -n "$LATEST_JAVA" ]]; then
+  echo ">>> Installing Java $LATEST_JAVA"
+  if ! asdf list java 2>/dev/null | grep -qx "$LATEST_JAVA"; then
+    asdf install java "$LATEST_JAVA"
+  fi
+  asdf set java "$LATEST_JAVA" || echo "⚠️ Could not set global Java version"
+else
+  echo "⚠️ Could not determine latest Java version, skipping"
+fi
+
 install_asdf_plugin poetry https://github.com/asdf-community/asdf-poetry.git
 install_asdf_plugin trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
 install_asdf_plugin kubectl https://github.com/Banno/asdf-kubectl.git
