@@ -185,7 +185,7 @@ fi
 install_asdf_plugin trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
 install_asdf_plugin kubectl https://github.com/Banno/asdf-kubectl.git
 install_asdf_plugin helm https://github.com/Antiarchitect/asdf-helm.git
-install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git
+install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git v0.4.5
 
 # -------------------------------------
 # Install modern Python package managers
@@ -223,6 +223,7 @@ install_asdf_plugin direnv "" latest
 
 # Configure direnv properly
 mkdir -p ~/.config/direnv
+touch ~/.config/direnv/direnvrc
 grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
   echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
 
