@@ -3,12 +3,6 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # ----------------------------------------
-# Ask for sudo password up front and keep alive
-# ----------------------------------------
-sudo -v
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-
-# ----------------------------------------
 # Check and install Homebrew (Apple Silicon only)
 # ----------------------------------------
 if ! command -v brew &>/dev/null; then
