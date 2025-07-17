@@ -81,6 +81,7 @@ declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
   firefox google-chrome brave-browser slack
   spotify teamviewer visual-studio-code whatsapp
+  docker ollama
 )
 declare -a testTools=(
   pre-commit vale hadolint
@@ -381,6 +382,5 @@ echo "   2. Configure Git with your details:"
 echo "      git config --global user.name 'Your Name'"
 echo "      git config --global user.email 'your@email.com'"
 echo "   3. Add your SSH key to GitHub/GitLab (key shown above)"
-echo "   4. Install Docker Desktop manually from docker.com"
 echo ""
 echo "🧭 To update everything in future, run: topgrade"
