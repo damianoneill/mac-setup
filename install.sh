@@ -2,22 +2,26 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# ----------------------------------------
 # Install Homebrew (Apple Silicon only)
+# ----------------------------------------
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# Put Homebrew on PATH
+# Add Homebrew to PATH for this script session
 eval "$("$(which brew)" shellenv)"
 
-# Install Bash 5.x via Homebrew, allow-list it, and switch default shell
+# ------------------------------------------------
+# Install Bash 5.x via Homebrew and allow-list
+# ------------------------------------------------
 brew install bash
 BREW_BASH="$(brew --prefix)/bin/bash"
 if ! grep -Fxq "$BREW_BASH" /etc/shells; then
   echo "$BREW_BASH" | sudo tee -a /etc/shells
 fi
-chsh -s "$BREW_BASH"
-echo ">>> Default shell set to $BREW_BASH (Bash $(bash --version | head -n1))"
 
-# 🛠️ Tools categories with comments for clarity
+# -----------------------------------------------------
+# Define categorized packages to install via Homebrew
+# -----------------------------------------------------
 declare -a terminal=(
   "iterm2" # Terminal emulator
   "tmux"   # Terminal multiplexer
@@ -46,7 +50,7 @@ declare -a productivity=(
   "git-extras"               # useful Git extensions
   "nmap"                     # network scanner
   "pass"                     # password manager
-  "shellcheck"               # shell script linter
+  "shellcheck"              # shell script linter
   "telnet"                   # network debugging tool
   "the_silver_searcher"      # fast code search
   "tree"                     # directory tree visualizer
@@ -77,18 +81,41 @@ declare -a guiApps=(
   "whatsapp"           # messaging app
 )
 
-# Install all via Homebrew
+# -------------------------------------
+# Install all apps and tools via brew
+# -------------------------------------
 brew install --no-quarantine "${terminal[@]}" \
   "${toolsAlternative[@]}" \
   "${productivity[@]}" \
   "${kubernetes[@]}" \
   "${guiApps[@]}"
 
-# Source asdf & run fzf installer
-source "$(brew --prefix)/opt/asdf/libexec/asdf.sh"
+# ----------------------------------------------
+# Update shell config for zsh (default shell)
+# ----------------------------------------------
+ZSHRC="$HOME/.zshrc"
+
+# Load asdf
+ASDF_INIT='source "$(brew --prefix asdf)/libexec/asdf.sh"'
+grep -qxF "$ASDF_INIT" "$ZSHRC" || echo "$ASDF_INIT" >> "$ZSHRC"
+
+# Load fzf if installed
+FZF_INIT='[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh'
+grep -qxF "$FZF_INIT" "$ZSHRC" || echo "$FZF_INIT" >> "$ZSHRC"
+
+# Enable direnv
+DIRENV_INIT='eval "$(direnv hook zsh)"'
+grep -qxF "$DIRENV_INIT" "$ZSHRC" || echo "$DIRENV_INIT" >> "$ZSHRC"
+
+# ----------------------------------------
+# Source asdf & install fzf extras now
+# ----------------------------------------
+source "$(brew --prefix asdf)/libexec/asdf.sh"
 "$(brew --prefix)/opt/fzf/install" --all
 
-# Helper to install asdf plugins safely
+# ------------------------------------------------
+# Helper to install asdf plugins with defaults
+# ------------------------------------------------
 install_asdf_plugin() {
   plugin="$1"
   repo="$2"
@@ -100,6 +127,9 @@ install_asdf_plugin() {
   asdf global "$plugin" "$version"
 }
 
+# ----------------------------------------
+# Install common asdf plugins & toolchains
+# ----------------------------------------
 install_asdf_plugin golang https://github.com/kennyp/asdf-golang.git
 install_asdf_plugin nodejs https://github.com/asdf-vm/asdf-nodejs.git
 install_asdf_plugin python https://github.com/danhper/asdf-python.git
@@ -110,41 +140,57 @@ install_asdf_plugin kubectl https://github.com/Banno/asdf-kubectl.git
 install_asdf_plugin helm https://github.com/Antiarchitect/asdf-helm.git
 install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git
 
+# -----------------------------------
+# Enable kubectl krew plugin support
+# -----------------------------------
 export PATH="${PATH}:${HOME}/.krew/bin"
+grep -qxF 'export PATH="$HOME/.krew/bin:$PATH"' "$ZSHRC" || echo 'export PATH="$HOME/.krew/bin:$PATH"' >> "$ZSHRC"
 kubectl krew install tail
 
-# Set up direnv via asdf + logging off
+# --------------------------------------------
+# Set up direnv with latest version via asdf
+# --------------------------------------------
 install_asdf_plugin direnv "" latest
-asdf direnv setup --shell bash --version latest
+asdf direnv setup --shell zsh --version latest
+
+# Silence direnv logs
 mkdir -p ~/.config/direnv
 grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
   echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
+
+# Enable direnv in current directory
 touch ~/.envrc
 grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
 
-# Update npm and install global node tools
+# --------------------------------------------
+# Upgrade npm and install global CLI tools
+# --------------------------------------------
 npm install -g npm@latest meta git-open
 
-# Install VS Code extensions
+# -------------------------------------
+# 🧩 Install VS Code extensions via CLI
+# -------------------------------------
 vscodeExts=(
-  "ms-vscode-remote.remote-ssh"         # Develop directly on remote machines via SSH
-  "foxundermoon.shell-format"           # Formats shell scripts (e.g., YAML, Bash)
-  "golang.go"                           # Go language support: IntelliSense, debugging, code navigation
-  "ms-azuretools.vscode-docker"         # Docker and Azure Container tooling
-  "ms-vscode.makefile-tools"            # Provides IntelliSense and build support for Makefiles
-  "shd101wyy.markdown-preview-enhanced" # Rich Markdown preview with diagram support and LaTeX
-  "timonwong.shellcheck"                # Integrates ShellCheck linting into VS Code
-  "znck.grammarly"                      # Grammarly integration for spelling and grammar checking
-  "donjayamanne.python-extension-pack"  # Bundled set of essential Python extensions
-  "d-biehl.robotcode"                   # Support and language features for Robot Framework
-  "vivaxy.vscode-conventional-commits"  # Enforces Conventional Commits standard
-  "charliermarsh.ruff"                  # Fast Python linter & formatter (Rust-based)
+  "ms-vscode-remote.remote-ssh"         # Remote SSH development
+  "foxundermoon.shell-format"           # Shell script formatter
+  "golang.go"                           # Go language support
+  "ms-azuretools.vscode-docker"         # Docker + Azure support
+  "ms-vscode.makefile-tools"            # Makefile language tools
+  "shd101wyy.markdown-preview-enhanced" # Markdown live preview
+  "timonwong.shellcheck"                # Shell linting via ShellCheck
+  "znck.grammarly"                      # Grammarly integration
+  "donjayamanne.python-extension-pack"  # Python extensions
+  "d-biehl.robotcode"                   # Robot Framework support
+  "vivaxy.vscode-conventional-commits"  # Commit message formatting
+  "charliermarsh.ruff"                  # Fast Python linter (Rust)
 )
 for ext in "${vscodeExts[@]}"; do
   code --install-extension "$ext" || echo "⚠️ Could not install VS Code extension $ext"
 done
 
-# Install Powerline fonts if needed
+# ----------------------------------------
+# Install Powerline fonts for terminals
+# ----------------------------------------
 FONTS_DIR="$HOME/Library/Fonts"
 if [[ ! -d "$FONTS_DIR" ]]; then
   echo ">>> Installing Powerline fonts"
@@ -153,7 +199,13 @@ if [[ ! -d "$FONTS_DIR" ]]; then
   rm -rf /tmp/fonts
 fi
 
-echo ">>> Dry-run topgrade"
-topgrade -n
+# --------------------------------------------------
+# Run topgrade in a *new login shell* (zsh-based)
+# --------------------------------------------------
+echo ">>> Running topgrade in a fresh login shell"
+/bin/zsh -l -c "topgrade"
 
+# --------------------------------------------------
+# Final note for manual install
+# --------------------------------------------------
 echo ">>> Please manually install Docker Desktop"
