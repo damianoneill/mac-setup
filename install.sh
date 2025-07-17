@@ -15,22 +15,31 @@ else
 fi
 
 # ----------------------------------------
-# Install updated Bash, but use Zsh as default shell
+# Install updated Bash and Zsh, set Zsh as default
 # ----------------------------------------
-brew install bash || true
+brew install bash zsh || true
+
+# Add Homebrew zsh to allowed shells if not already there
+BREW_ZSH="$(brew --prefix)/bin/zsh"
+if ! grep -Fxq "$BREW_ZSH" /etc/shells; then
+  echo ">>> Adding Homebrew zsh to /etc/shells..."
+  echo "$BREW_ZSH" | sudo tee -a /etc/shells
+fi
+
+# Add Homebrew bash to allowed shells if not already there
 BREW_BASH="$(brew --prefix)/bin/bash"
 if ! grep -Fxq "$BREW_BASH" /etc/shells; then
+  echo ">>> Adding Homebrew bash to /etc/shells..."
   echo "$BREW_BASH" | sudo tee -a /etc/shells
 fi
 
-# Only change default shell if needed
-CURRENT_SHELL="$(dscl . -read "$HOME" UserShell | awk '{print $2}')"
-ZSH_PATH="$(which zsh)"
-if [[ "$CURRENT_SHELL" != "$ZSH_PATH" ]]; then
-  echo ">>> Setting default shell to zsh..."
-  chsh -s "$ZSH_PATH"
+# Set zsh as default shell if it isn't already
+if [[ "$SHELL" != "$BREW_ZSH" ]]; then
+  echo ">>> Setting default shell to Homebrew zsh..."
+  chsh -s "$BREW_ZSH"
+  echo "✅ Shell changed to $BREW_ZSH"
 else
-  echo "✅ Default shell is already zsh."
+  echo "✅ Default shell is already Homebrew zsh."
 fi
 
 # ----------------------------------------
@@ -61,23 +70,27 @@ declare -a productivity=(
   topgrade asdf cloc chromedriver universal-ctags ctop curl dos2unix
   docker-compose git git-extras nmap pass shellcheck telnet
   the_silver_searcher tree wget xquartz jq python-yq
-  docker-credential-helper fzf z dive tig
+  docker-credential-helper fzf z dive tig lazygit
 )
 declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
-  firefox lazygit google-chrome brave-browser slack
+  firefox google-chrome brave-browser slack
   spotify teamviewer visual-studio-code whatsapp
 )
 declare -a testTools=(
   pre-commit vale hadolint
 )
 
+# Fix: combine all arrays properly for one brew install command
+echo ">>> Installing Homebrew packages..."
 brew install --no-quarantine "${terminal[@]}" \
   "${toolsAlternative[@]}" \
   "${productivity[@]}" \
   "${kubernetes[@]}" \
-  "${guiApps[@]}" \
   "${testTools[@]}" || true
+
+echo ">>> Installing GUI applications..."
+brew install --cask --no-quarantine "${guiApps[@]}" || true
 
 # -------------------------------------
 # Add runtime tool support to zshrc
@@ -99,18 +112,36 @@ install_asdf_plugin() {
   local plugin="$1"
   local repo="$2"
   local version="${3:-latest}"
-  if ! asdf plugin-list | grep -qx "$plugin"; then
-    asdf plugin-add "$plugin" "$repo"
+
+  # Check if plugin is already installed
+  if ! asdf plugin list | grep -qx "$plugin"; then
+    echo ">>> Installing asdf plugin: $plugin"
+    if [[ -n "$repo" ]]; then
+      asdf plugin add "$plugin" "$repo"
+    else
+      asdf plugin add "$plugin"
+    fi
+  else
+    echo "✅ asdf plugin $plugin already installed"
   fi
-  if ! asdf list "$plugin" | grep -qx "$version"; then
+
+  # Install the version if not already installed
+  if ! asdf list "$plugin" 2>/dev/null | grep -qx "$version"; then
+    echo ">>> Installing $plugin $version"
     asdf install "$plugin" "$version"
+  else
+    echo "✅ $plugin $version already installed"
   fi
-  asdf global "$plugin" "$version"
+
+  # Set global version using the working method
+  echo ">>> Setting global version for $plugin to $version"
+  cd "$HOME" && asdf set "$plugin" "$version" || echo "⚠️ Could not set global version for $plugin"
 }
 
 # -------------------------------------
 # Install asdf toolchains (latest by default)
 # -------------------------------------
+echo ">>> Installing development languages via asdf..."
 install_asdf_plugin golang https://github.com/kennyp/asdf-golang.git
 install_asdf_plugin nodejs https://github.com/asdf-vm/asdf-nodejs.git
 install_asdf_plugin python https://github.com/danhper/asdf-python.git
@@ -131,8 +162,9 @@ kubectl krew install tail || echo "krew tail already installed"
 # -----------------------------------
 # Setup direnv and quiet output
 # -----------------------------------
+echo ">>> Setting up direnv..."
 install_asdf_plugin direnv "" latest
-asdf direnv setup --shell zsh --version latest
+asdf direnv setup --shell zsh --version latest || echo "⚠️ direnv setup may need manual configuration"
 
 mkdir -p ~/.config/direnv
 grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
@@ -144,7 +176,12 @@ grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
 # --------------------------------------------
 # Upgrade npm and install global tools
 # --------------------------------------------
-npm install -g npm@latest meta git-open typescript eslint prettier yarn || true
+echo ">>> Installing npm global packages..."
+if command -v npm &>/dev/null; then
+  npm install -g npm@latest meta git-open typescript eslint prettier yarn || true
+else
+  echo "⚠️ npm not available yet, skipping global package installation"
+fi
 
 # --------------------------------------------
 # Install VS Code extensions
@@ -215,11 +252,20 @@ fi
 # MacOS system tweaks (idempotent)
 # --------------------------------------------
 echo ">>> Applying macOS defaults tweaks..."
+# Show all filename extensions in Finder
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+
+# Show hidden files by default
 defaults write com.apple.finder AppleShowAllFiles -bool true
+
+# Disable "Are you sure you want to open this application?" dialog
 defaults write com.apple.LaunchServices LSQuarantine -bool false
+
+# Set fast key repeat rate
 defaults write NSGlobalDomain KeyRepeat -int 1
 defaults write NSGlobalDomain InitialKeyRepeat -int 10
+
+# Restart Finder to apply changes
 killall Finder || true
 
 # --------------------------------------------
@@ -233,9 +279,20 @@ asdf reshim || true
 # Final: run topgrade in fresh zsh shell
 # --------------------------------------------
 echo ">>> Running topgrade in fresh login shell..."
-/bin/zsh -l -c "topgrade"
+"$BREW_ZSH" -l -c "topgrade"
 
 # --------------------------------------------
 # Manual step reminder
 # --------------------------------------------
-echo "🧭 Please manually install Docker Desktop (GUI app)"
+echo ""
+echo "🎉 Installation complete!"
+echo ""
+echo "📋 Next steps:"
+echo "   1. Restart your terminal to use the new shell"
+echo "   2. Configure Git with your details:"
+echo "      git config --global user.name 'Your Name'"
+echo "      git config --global user.email 'your@email.com'"
+echo "   3. Add your SSH key to GitHub/GitLab (key shown above)"
+echo "   4. Install Docker Desktop manually from docker.com"
+echo ""
+echo "🧭 To update everything in future, run: topgrade"
