@@ -182,11 +182,31 @@ else
   echo "⚠️ Could not determine latest Java version, skipping"
 fi
 
-install_asdf_plugin poetry https://github.com/asdf-community/asdf-poetry.git
 install_asdf_plugin trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
 install_asdf_plugin kubectl https://github.com/Banno/asdf-kubectl.git
 install_asdf_plugin helm https://github.com/Antiarchitect/asdf-helm.git
 install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git
+
+# -------------------------------------
+# Install modern Python package managers
+# -------------------------------------
+echo ">>> Installing UV Python package manager (recommended)..."
+if ! command -v uv &>/dev/null; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  add_to_zshrc 'export PATH="$HOME/.cargo/bin:$PATH"'
+  echo "✅ UV installed successfully"
+else
+  echo "✅ UV already installed"
+fi
+
+echo ">>> Installing Rye Python package manager (legacy support)..."
+if ! command -v rye &>/dev/null; then
+  curl -sSf https://rye.astral.sh/get | bash
+  add_to_zshrc 'source "$HOME/.rye/env"'
+  echo "✅ Rye installed successfully"
+else
+  echo "✅ Rye already installed"
+fi
 
 # -----------------------------------
 # Enable kubectl krew plugin support
@@ -200,14 +220,25 @@ kubectl krew install tail || echo "krew tail already installed"
 # -----------------------------------
 echo ">>> Setting up direnv..."
 install_asdf_plugin direnv "" latest
-asdf direnv setup --shell zsh --version latest || echo "⚠️ direnv setup may need manual configuration"
 
+# Configure direnv properly
 mkdir -p ~/.config/direnv
 grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
   echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
 
-touch ~/.envrc
-grep -qxF 'use asdf' ~/.envrc || echo 'use asdf' >>~/.envrc
+# Create .envrc file but don't use problematic asdf integration
+if [ -f ~/.envrc ]; then
+  # Remove problematic 'use asdf' line if it exists
+  grep -v "use asdf" ~/.envrc > ~/.envrc.tmp && mv ~/.envrc.tmp ~/.envrc || rm -f ~/.envrc.tmp
+fi
+
+# Setup direnv with shell integration (skip the problematic asdf setup for now)
+if command -v direnv &>/dev/null; then
+  echo "✅ direnv installed successfully"
+  echo "⚠️ Note: direnv-asdf integration skipped due to compatibility issues"
+else
+  echo "⚠️ direnv setup may need manual configuration"
+fi
 
 # --------------------------------------------
 # Upgrade npm and install global tools
@@ -230,9 +261,6 @@ vscodeExts=(
   "ms-vscode.makefile-tools"
   "shd101wyy.markdown-preview-enhanced"
   "timonwong.shellcheck"
-  "znck.grammarly"
-  "donjayamanne.python-extension-pack"
-  "d-biehl.robotcode"
   "vivaxy.vscode-conventional-commits"
   "charliermarsh.ruff"
 )
