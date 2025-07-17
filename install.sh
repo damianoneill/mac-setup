@@ -269,6 +269,7 @@ vscodeExts=(
   "timonwong.shellcheck"
   "vivaxy.vscode-conventional-commits"
   "charliermarsh.ruff"
+  "ms-python.python"
 )
 for ext in "${vscodeExts[@]}"; do
   if command -v code &>/dev/null; then
@@ -306,17 +307,34 @@ else
 fi
 
 # --------------------------------------------
-# Generate SSH key if missing
+# Generate SSH key if missing (with email prompt)
 # --------------------------------------------
 SSH_KEY="$HOME/.ssh/id_ed25519"
 if [ ! -f "$SSH_KEY" ]; then
+  echo ">>> No SSH key found."
+
+  # Prompt for email address
+  while true; do
+    read -rp "📧 Enter email address for SSH key (used for Git): " user_email
+    read -rp "❓ Use \"$user_email\" for SSH key? [y/n]: " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+      break
+    fi
+    echo "🔁 Let's try again..."
+  done
+
   echo ">>> Generating new SSH key (ed25519)..."
-  ssh-keygen -t ed25519 -C "your_email@example.com" -f "$SSH_KEY" -N ""
-  echo ">>> SSH public key (add to GitHub/GitLab):"
+  ssh-keygen -t ed25519 -C "$user_email" -f "$SSH_KEY" -N ""
+  echo "✅ SSH key generated."
+  echo ""
+  echo "📋 SSH public key (add this to GitHub/GitLab):"
+  echo "------------------------------------------------"
   cat "${SSH_KEY}.pub"
+  echo "------------------------------------------------"
 else
   echo "✅ SSH key already exists, skipping generation."
 fi
+
 
 # --------------------------------------------
 # MacOS system tweaks (idempotent)
