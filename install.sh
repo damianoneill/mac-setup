@@ -73,9 +73,9 @@ declare -a terminal=(iterm2 tmux neovim)
 declare -a toolsAlternative=(lsd bat fd rg htop)
 declare -a productivity=(
   topgrade asdf cloc chromedriver universal-ctags ctop curl dos2unix
-  docker-compose git git-extras nmap pass shellcheck telnet
+  docker-compose git git-extras git-lfs nmap pass shellcheck telnet
   the_silver_searcher tree wget xquartz jq python-yq
-  docker-credential-helper fzf z dive tig lazygit
+  docker-credential-helper fzf z dive tig lazygit gh
 )
 declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
@@ -290,6 +290,7 @@ vscodeExts=(
   "vivaxy.vscode-conventional-commits"
   "charliermarsh.ruff"
   "ms-python.python"
+  "tamasfe.even-better-toml"
 )
 for ext in "${vscodeExts[@]}"; do
   if command -v code &>/dev/null; then
