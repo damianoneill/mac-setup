@@ -214,6 +214,26 @@ else
   echo "✅ Rye already installed"
 fi
 
+# -------------------------------------
+# Install Ruff linter and formatter
+# -------------------------------------
+echo ">>> Installing Ruff Python linter and formatter..."
+if command -v uv &>/dev/null; then
+  # Install with uv tool (recommended by Ruff)
+  uv tool install ruff@latest
+  echo "✅ Ruff installed successfully with uv tool"
+elif command -v curl &>/dev/null; then
+  # Install with the standalone installer
+  curl -LsSf https://astral.sh/ruff/install.sh | sh
+  echo "✅ Ruff installed successfully with standalone installer"
+elif command -v brew &>/dev/null; then
+  # Fallback to Homebrew
+  brew install ruff
+  echo "✅ Ruff installed successfully with Homebrew"
+else
+  echo "⚠️ Could not install Ruff - no compatible installation method found"
+fi
+
 # -----------------------------------
 # Enable kubectl krew plugin support
 # -----------------------------------
@@ -242,7 +262,6 @@ fi
 # Setup direnv with shell integration (skip the problematic asdf setup for now)
 if command -v direnv &>/dev/null; then
   echo "✅ direnv installed successfully"
-  echo "⚠️ Note: direnv-asdf integration skipped due to compatibility issues"
 else
   echo "⚠️ direnv setup may need manual configuration"
 fi
@@ -356,6 +375,13 @@ defaults write NSGlobalDomain InitialKeyRepeat -int 10
 
 # Restart Finder to apply changes
 killall Finder || true
+
+# Auto-hide the Dock
+defaults write com.apple.dock autohide -bool true
+
+# Apply changes by restarting the Dock
+killall Dock || true
+
 
 # --------------------------------------------
 # Cleanup Homebrew and asdf

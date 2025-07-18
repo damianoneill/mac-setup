@@ -2,6 +2,8 @@
 
 A comprehensive macOS development environment setup script that installs and configures essential tools, languages, and applications for software development.
 
+> If running zscaler, disable Internet Security!
+
 ## Prerequisites
 
 - **macOS** (Apple Silicon recommended - M1/M2/M3)
