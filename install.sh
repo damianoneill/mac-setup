@@ -17,11 +17,21 @@ fi
 echo ">>> Fixing permissions for Homebrew directories to avoid zsh compinit warnings..."
 chmod g-w /opt/homebrew/share || true
 
-
 # ----------------------------------------
 # Install updated Bash and Zsh, set Zsh as default
 # ----------------------------------------
-brew install bash zsh || true
+echo ">>> Installing updated Bash and Zsh..."
+if brew list bash &>/dev/null; then
+  echo "✅ bash already installed, skipping"
+else
+  brew install bash || true
+fi
+
+if brew list zsh &>/dev/null; then
+  echo "✅ zsh already installed, skipping"
+else
+  brew install zsh || true
+fi
 
 # Add Homebrew zsh to allowed shells if not already there
 BREW_ZSH="$(brew --prefix)/bin/zsh"
@@ -49,7 +59,16 @@ fi
 # ----------------------------------------
 # Install Zsh tools & improvements
 # ----------------------------------------
-brew install zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide || true
+echo ">>> Installing Zsh tools & improvements..."
+declare -a zsh_tools=(zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide)
+for tool in "${zsh_tools[@]}"; do
+  if brew list "$tool" &>/dev/null; then
+    echo "✅ $tool already installed, skipping"
+  else
+    echo ">>> Installing $tool..."
+    brew install "$tool" || echo "⚠️ Failed to install $tool"
+  fi
+done
 
 ZSHRC="$HOME/.zshrc"
 
@@ -75,28 +94,40 @@ declare -a productivity=(
   topgrade asdf cloc chromedriver universal-ctags ctop curl dos2unix
   docker-compose git git-extras git-lfs nmap pass shellcheck telnet
   the_silver_searcher tree wget xquartz jq python-yq
-  docker-credential-helper fzf z dive tig lazygit gh
+  docker-credential-helper fzf z dive tig lazygit gh 1password-cli
 )
 declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
   firefox google-chrome brave-browser slack
   spotify teamviewer visual-studio-code whatsapp
-  docker ollama
+  docker ollama 1password
 )
 declare -a testTools=(
-  pre-commit vale hadolint
+  pre-commit vale hadolint k6
 )
 
-# Fix: combine all arrays properly for one brew install command
+# Install command-line tools with idempotent checking
 echo ">>> Installing Homebrew packages..."
-brew install --no-quarantine "${terminal[@]}" \
-  "${toolsAlternative[@]}" \
-  "${productivity[@]}" \
-  "${kubernetes[@]}" \
-  "${testTools[@]}" || true
+all_cli_tools=("${terminal[@]}" "${toolsAlternative[@]}" "${productivity[@]}" "${kubernetes[@]}" "${testTools[@]}")
+for tool in "${all_cli_tools[@]}"; do
+  if brew list "$tool" &>/dev/null; then
+    echo "✅ $tool already installed, skipping"
+  else
+    echo ">>> Installing $tool..."
+    brew install --no-quarantine "$tool" || echo "⚠️ Failed to install $tool"
+  fi
+done
 
+# Install GUI applications with idempotent checking
 echo ">>> Installing GUI applications..."
-brew install --cask --no-quarantine "${guiApps[@]}" || true
+for app in "${guiApps[@]}"; do
+  if brew list --cask "$app" &>/dev/null; then
+    echo "✅ $app already installed, skipping"
+  else
+    echo ">>> Installing $app..."
+    brew install --cask --no-quarantine "$app" || echo "⚠️ Failed to install $app"
+  fi
+done
 
 # -------------------------------------
 # Add runtime tool support to zshrc
@@ -194,31 +225,33 @@ install_asdf_plugin helm https://github.com/Antiarchitect/asdf-helm.git
 install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git v0.4.5
 
 # -------------------------------------
-# Install modern Python package managers
+# Install modern Python package managers (idempotent)
 # -------------------------------------
 echo ">>> Installing UV Python package manager (recommended)..."
-if ! command -v uv &>/dev/null; then
+if command -v uv &>/dev/null; then
+  echo "✅ UV already installed, skipping"
+elif ! command -v uv &>/dev/null; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
   add_to_zshrc 'export PATH="$HOME/.cargo/bin:$PATH"'
   echo "✅ UV installed successfully"
-else
-  echo "✅ UV already installed"
 fi
 
 echo ">>> Installing Rye Python package manager (legacy support)..."
-if ! command -v rye &>/dev/null; then
+if command -v rye &>/dev/null; then
+  echo "✅ Rye already installed, skipping"
+elif ! command -v rye &>/dev/null; then
   curl -sSf https://rye.astral.sh/get | bash
   add_to_zshrc 'source "$HOME/.rye/env"'
   echo "✅ Rye installed successfully"
-else
-  echo "✅ Rye already installed"
 fi
 
 # -------------------------------------
-# Install Ruff linter and formatter
+# Install Ruff linter and formatter (idempotent)
 # -------------------------------------
 echo ">>> Installing Ruff Python linter and formatter..."
-if command -v uv &>/dev/null; then
+if command -v ruff &>/dev/null; then
+  echo "✅ Ruff already installed, skipping"
+elif command -v uv &>/dev/null; then
   # Install with uv tool (recommended by Ruff)
   uv tool install ruff@latest
   echo "✅ Ruff installed successfully with uv tool"
@@ -239,7 +272,14 @@ fi
 # -----------------------------------
 export PATH="${HOME}/.krew/bin:$PATH"
 add_to_zshrc 'export PATH="$HOME/.krew/bin:$PATH"'
-kubectl krew install tail || echo "krew tail already installed"
+
+# Only install krew plugins if krew is available
+if command -v kubectl &>/dev/null && kubectl krew version &>/dev/null; then
+  echo ">>> Installing kubectl krew plugins..."
+  kubectl krew install tail || echo "✅ krew tail already installed"
+else
+  echo "⚠️ kubectl krew not available, skipping plugin installation"
+fi
 
 # -----------------------------------
 # Setup direnv and quiet output
@@ -267,6 +307,258 @@ else
 fi
 
 # --------------------------------------------
+# Configure Git with sensible defaults and aliases
+# --------------------------------------------
+setup_git_config() {
+  echo ">>> Setting up Git configuration..."
+
+  # Core settings
+  git config --global init.defaultBranch main
+  git config --global pull.rebase true
+  git config --global push.autoSetupRemote true
+  git config --global core.autocrlf input
+  git config --global core.editor "code --wait"
+  git config --global diff.tool "vscode"
+  git config --global difftool.vscode.cmd "code --wait --diff \$LOCAL \$REMOTE"
+  git config --global merge.tool "vscode"
+  git config --global mergetool.vscode.cmd "code --wait \$MERGED"
+  git config --global rerere.enabled true
+
+  # Useful aliases
+  git config --global alias.co checkout
+  git config --global alias.br branch
+  git config --global alias.ci commit
+  git config --global alias.st status
+  git config --global alias.unstage "reset HEAD --"
+  git config --global alias.last "log -1 HEAD"
+  git config --global alias.visual "!gitk"
+  git config --global alias.tree "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+  git config --global alias.branches "branch -a"
+  git config --global alias.remotes "remote -v"
+  git config --global alias.aliases "config --get-regexp alias"
+  git config --global alias.amend "commit --amend --no-edit"
+  git config --global alias.undo "reset --soft HEAD~1"
+  git config --global alias.wip "commit -am 'WIP'"
+  git config --global alias.squash "rebase -i HEAD~"
+  git config --global alias.cleanup "!git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d"
+  git config --global alias.fresh "!git fetch --all && git checkout main && git pull origin main"
+  git config --global alias.sync "!git fresh && git cleanup"
+
+  echo "✅ Git configuration completed"
+}
+
+# --------------------------------------------
+# Setup VS Code settings
+# --------------------------------------------
+setup_vscode_settings() {
+  echo ">>> Setting up VS Code settings..."
+
+  local vscode_dir="$HOME/Library/Application Support/Code/User"
+  mkdir -p "$vscode_dir"
+
+  local settings_file="$vscode_dir/settings.json"
+
+  # Backup existing settings if they exist
+  if [[ -f "$settings_file" ]]; then
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    cp "$settings_file" "${settings_file}.backup_${timestamp}"
+    echo ">>> Backed up existing VS Code settings to ${settings_file}.backup_${timestamp}"
+  fi
+
+  # Create VS Code settings.json with sensible defaults
+  cat > "$settings_file" << 'EOF'
+{
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [120],
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.wordWrapColumn": 120,
+  "editor.minimap.enabled": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/node_modules": true,
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.fontFamily": "MesloLGS NF",
+  "workbench.startupEditor": "newUntitledFile",
+  "workbench.editor.enablePreview": false,
+  "workbench.colorTheme": "Default Dark+",
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "python.defaultInterpreterPath": "python",
+  "python.formatting.provider": "none",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.tabSize": 4,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports.ruff": "explicit",
+      "source.fixAll.ruff": "explicit"
+    }
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.tabSize": 2
+  },
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
+  },
+  "ruff.organizeImports": true,
+  "ruff.fixAll": true,
+  "shellcheck.enable": true,
+  "conventionalCommits.scopes": [
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "test",
+    "chore"
+  ]
+}
+EOF
+
+  echo "✅ VS Code settings configured (existing settings backed up)"
+}
+
+# --------------------------------------------
+# Setup Starship prompt configuration
+# --------------------------------------------
+setup_starship_config() {
+  echo ">>> Setting up Starship configuration..."
+
+  local starship_config="$HOME/.config/starship.toml"
+  mkdir -p "$(dirname "$starship_config")"
+
+  cat > "$starship_config" << 'EOF'
+# Starship configuration
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+$docker_context\
+$kubernetes\
+$python\
+$nodejs\
+$golang\
+$java\
+$cmd_duration\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
+
+[directory]
+truncation_length = 3
+truncation_symbol = "…/"
+style = "bold cyan"
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+
+[git_status]
+ahead = "⇡${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+behind = "⇣${count}"
+deleted = "✘"
+modified = "!"
+staged = "+"
+untracked = "?"
+style = "bold yellow"
+
+[python]
+symbol = " "
+python_binary = ["python", "python3", "python2"]
+style = "bold green"
+
+[nodejs]
+symbol = " "
+style = "bold green"
+
+[golang]
+symbol = " "
+style = "bold cyan"
+
+[java]
+symbol = " "
+style = "bold red"
+
+[docker_context]
+symbol = " "
+style = "bold blue"
+
+[kubernetes]
+disabled = false
+symbol = "⎈ "
+style = "bold blue"
+
+[cmd_duration]
+min_time = 2_000
+format = "took [$duration](bold yellow)"
+
+[username]
+style_user = "bold dimmed blue"
+show_always = false
+
+[hostname]
+ssh_only = true
+style = "bold dimmed green"
+EOF
+
+  echo "✅ Starship configuration created"
+}
+
+# --------------------------------------------
 # Upgrade npm and install global tools
 # --------------------------------------------
 echo ">>> Installing npm global packages..."
@@ -277,7 +569,7 @@ else
 fi
 
 # --------------------------------------------
-# Install VS Code extensions
+# Install VS Code extensions (idempotent)
 # --------------------------------------------
 vscodeExts=(
   "ms-vscode-remote.remote-ssh"
@@ -291,25 +583,56 @@ vscodeExts=(
   "charliermarsh.ruff"
   "ms-python.python"
   "tamasfe.even-better-toml"
+  "esbenp.prettier-vscode"
+  "redhat.vscode-yaml"
+  "ms-vscode-remote.remote-containers"
 )
-for ext in "${vscodeExts[@]}"; do
-  if command -v code &>/dev/null; then
-    code --install-extension "$ext" || echo "⚠️ Could not install VS Code extension $ext"
-  else
-    echo "⚠️ VS Code CLI (code) not found, skipping extension installs"
-    break
-  fi
-done
+
+if command -v code &>/dev/null; then
+  echo ">>> Installing VS Code extensions..."
+  # Get list of already installed extensions once
+  installed_extensions=$(code --list-extensions 2>/dev/null || echo "")
+
+  for ext in "${vscodeExts[@]}"; do
+    if echo "$installed_extensions" | grep -q "^${ext}$"; then
+      echo "✅ $ext already installed, skipping"
+    else
+      echo ">>> Installing VS Code extension: $ext"
+      if ! code --install-extension "$ext" 2>/dev/null; then
+        echo "⚠️ Could not install VS Code extension $ext"
+      fi
+    fi
+  done
+else
+  echo "⚠️ VS Code CLI (code) not found, skipping extension installs"
+fi
 
 # --------------------------------------------
-# Install Powerline fonts if missing
+# Install Powerline fonts if missing (idempotent)
 # --------------------------------------------
 POWERLINE_MARKER="DejaVu Sans Mono for Powerline"
-if ! fc-list 2>/dev/null | grep -qi "$POWERLINE_MARKER"; then
+if fc-list 2>/dev/null | grep -qi "$POWERLINE_MARKER"; then
+  echo "✅ Powerline fonts already installed, skipping"
+else
   echo ">>> Installing Powerline fonts"
+  if [[ -d /tmp/fonts ]]; then
+    rm -rf /tmp/fonts
+  fi
   git clone https://github.com/powerline/fonts.git --depth=1 /tmp/fonts
-  /tmp/fonts/install.sh
+  cd /tmp/fonts && ./install.sh
+  cd - > /dev/null
   rm -rf /tmp/fonts
+  echo "✅ Powerline fonts installed"
+fi
+
+# Install Nerd Fonts for better Starship experience (with checking)
+echo ">>> Installing Nerd Fonts..."
+# Note: homebrew/cask-fonts is deprecated, but individual font casks still work
+if brew list --cask font-meslo-lg-nerd-font &>/dev/null; then
+  echo "✅ font-meslo-lg-nerd-font already installed, skipping"
+else
+  echo ">>> Installing font-meslo-lg-nerd-font..."
+  brew install --cask font-meslo-lg-nerd-font || echo "⚠️ Failed to install Nerd Font"
 fi
 
 # --------------------------------------------
@@ -352,10 +675,26 @@ if [ ! -f "$SSH_KEY" ]; then
   echo "------------------------------------------------"
   cat "${SSH_KEY}.pub"
   echo "------------------------------------------------"
+
+  # Store email for Git configuration
+  GIT_EMAIL="$user_email"
 else
   echo "✅ SSH key already exists, skipping generation."
+  # Try to extract email from existing SSH key
+  GIT_EMAIL=$(ssh-keygen -l -f "${SSH_KEY}.pub" 2>/dev/null | grep -o '[^[:space:]]*@[^[:space:]]*' || echo "")
 fi
 
+# Setup Git user configuration
+if [[ -n "${GIT_EMAIL:-}" ]]; then
+  echo ">>> Configuring Git user settings..."
+  read -rp "📝 Enter your full name for Git commits: " git_name
+  git config --global user.email "$GIT_EMAIL"
+  git config --global user.name "$git_name"
+  echo "✅ Git user configuration completed"
+fi
+
+# Run Git configuration setup
+setup_git_config
 
 # --------------------------------------------
 # MacOS system tweaks (idempotent)
@@ -371,8 +710,8 @@ defaults write com.apple.finder AppleShowAllFiles -bool true
 defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 # Set fast key repeat rate
-defaults write NSGlobalDomain KeyRepeat -int 1
-defaults write NSGlobalDomain InitialKeyRepeat -int 10
+defaults write NSGlobalDomain KeyRepeat -int 3
+defaults write NSGlobalDomain InitialKeyRepeat -int 15
 
 # Restart Finder to apply changes
 killall Finder || true
@@ -383,6 +722,11 @@ defaults write com.apple.dock autohide -bool true
 # Apply changes by restarting the Dock
 killall Dock || true
 
+# --------------------------------------------
+# Setup configuration files
+# --------------------------------------------
+setup_vscode_settings
+setup_starship_config
 
 # --------------------------------------------
 # Cleanup Homebrew and asdf
@@ -404,10 +748,15 @@ echo ""
 echo "🎉 Installation complete!"
 echo ""
 echo "📋 Next steps:"
-echo "   1. Restart your terminal to use the new shell"
-echo "   2. Configure Git with your details:"
-echo "      git config --global user.name 'Your Name'"
-echo "      git config --global user.email 'your@email.com'"
-echo "   3. Add your SSH key to GitHub/GitLab (key shown above)"
+echo "   1. Restart your terminal to use the new shell and see the Starship prompt"
+echo "   2. Your Git configuration has been set up with useful aliases"
+echo "   3. VS Code settings have been configured with Python-focused defaults"
+echo "   4. Add your SSH key to GitHub/GitLab (key shown above)"
 echo ""
-echo "🧭 To update everything in future, run: topgrade"
+echo "🧭 Useful Git aliases added:"
+echo "   git tree    - Pretty commit graph"
+echo "   git sync    - Fetch, checkout main, pull, cleanup merged branches"
+echo "   git wip     - Quick work-in-progress commit"
+echo "   git aliases - Show all configured aliases"
+echo ""
+echo "🔧 To update everything in future, run: topgrade"
