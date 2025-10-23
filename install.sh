@@ -338,17 +338,20 @@ setup_git_config() {
 
   # Set up commit message template
   cat > "$HOME/.gitmessage" << 'TEMPLATE'
-# <type>(<scope>): <subject>
-#
-# <body>
-#
-# refs: MSC-
+feat: <subject>
 
-# Type: feat, fix, docs, style, refactor, test, chore
-# Scope: component or module affected
+# <body>
+
+refs: MSC-
+
+# Type: feat, fix, docs, style, refactor, test, chore, build
+
 # Subject: short description (imperative mood)
+
 # Body: detailed explanation (optional)
+
 # Footer: MUST include "refs: JIRA-XXX" for issue tracking
+
 TEMPLATE
   git config --global commit.template "$HOME/.gitmessage"
   echo "✅ Git commit template configured"
