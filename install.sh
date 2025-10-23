@@ -89,18 +89,18 @@ add_to_zshrc 'autoload -Uz compinit && compinit'
 # Homebrew apps to install
 # -------------------------------------
 declare -a terminal=(iterm2 tmux neovim)
-declare -a toolsAlternative=(lsd bat fd rg htop)
+declare -a toolsAlternative=(lsd bat fd rg htop coreutils)
 declare -a productivity=(
-  topgrade asdf cloc chromedriver universal-ctags ctop curl dos2unix
+  topgrade mise cloc chromedriver universal-ctags ctop curl dos2unix
   docker-compose git git-extras git-lfs nmap pass shellcheck telnet
   the_silver_searcher tree wget xquartz jq python-yq
-  docker-credential-helper fzf z dive tig lazygit gh 1password-cli
+  docker-credential-helper fzf z dive tig lazygit gh 1password-cli valkey
 )
 declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
   firefox google-chrome brave-browser slack
   spotify teamviewer visual-studio-code whatsapp
-  docker ollama 1password
+  docker ollama 1password pgadmin4 redis-insight
 )
 declare -a testTools=(
   pre-commit vale hadolint k6
@@ -132,97 +132,82 @@ done
 # -------------------------------------
 # Add runtime tool support to zshrc
 # -------------------------------------
-add_to_zshrc 'source "$(brew --prefix asdf)/libexec/asdf.sh"'
+add_to_zshrc 'eval "$(/opt/homebrew/bin/mise activate zsh)"'
 add_to_zshrc '[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh'
 add_to_zshrc 'eval "$(direnv hook zsh)"'
 
 # -------------------------------------
 # Init tools for current session
 # -------------------------------------
-source "$(brew --prefix asdf)/libexec/asdf.sh"
-"$(brew --prefix)/opt/fzf/install" --all
+if command -v mise &>/dev/null; then
+  eval "$(/opt/homebrew/bin/mise activate bash)"
+else
+  echo "⚠️ mise not yet available, skipping activation for current session"
+fi
+
+# Install fzf key bindings and fuzzy completion
+if [ -f "$(brew --prefix)/opt/fzf/install" ]; then
+  "$(brew --prefix)/opt/fzf/install" --all || echo "⚠️ fzf install had issues"
+fi
 
 # -------------------------------------
-# Helper: install asdf plugin+version
+# Helper: install mise tool+version
 # -------------------------------------
-install_asdf_plugin() {
-  local plugin="$1"
-  local repo="$2"
-  local version="${3:-latest}"
+install_mise_tool() {
+  local tool="$1"
+  local version="${2:-latest}"
 
-  # Check if plugin is already installed
-  if ! asdf plugin list | grep -qx "$plugin"; then
-    echo ">>> Installing asdf plugin: $plugin"
-    if [[ -n "$repo" ]]; then
-      asdf plugin add "$plugin" "$repo"
-    else
-      asdf plugin add "$plugin"
-    fi
+  echo ">>> Installing $tool@$version with mise..."
+
+  # Check if already installed
+  if mise list "$tool" 2>/dev/null | grep -q "$version"; then
+    echo "✅ $tool@$version already installed"
   else
-    echo "✅ asdf plugin $plugin already installed"
-  fi
-
-  # Install the version if not already installed
-  if [[ "$version" == "latest" ]]; then
-    # Try to get the actual latest version
-    echo ">>> Finding latest version for $plugin..."
-    actual_version=$(asdf latest "$plugin" 2>/dev/null || echo "")
-    if [[ -n "$actual_version" ]]; then
-      version="$actual_version"
-      echo ">>> Latest version for $plugin is: $version"
-    else
-      echo "⚠️ Could not determine latest version for $plugin, trying generic 'latest'"
-    fi
-  fi
-
-  if ! asdf list "$plugin" 2>/dev/null | grep -qx "$version"; then
-    echo ">>> Installing $plugin $version"
-    if ! asdf install "$plugin" "$version"; then
-      echo "⚠️ Failed to install $plugin $version, skipping"
+    if ! mise install "$tool@$version"; then
+      echo "⚠️ Failed to install $tool@$version, skipping"
       return 1
     fi
-  else
-    echo "✅ $plugin $version already installed"
+    echo "✅ $tool@$version installed successfully"
   fi
 
-  # Set global version using the working method
-  echo ">>> Setting global version for $plugin to $version"
-  cd "$HOME" && asdf set "$plugin" "$version" || echo "⚠️ Could not set global version for $plugin"
+  # Set as global version
+  echo ">>> Setting global version for $tool to $version"
+  mise use -g "$tool@$version" || echo "⚠️ Could not set global version for $tool"
 }
 
 # -------------------------------------
-# Install asdf toolchains (with specific versions for problematic ones)
+# Install mise toolchains
 # -------------------------------------
-echo ">>> Installing development languages via asdf..."
-install_asdf_plugin golang https://github.com/kennyp/asdf-golang.git
-install_asdf_plugin nodejs https://github.com/asdf-vm/asdf-nodejs.git
-install_asdf_plugin python https://github.com/danhper/asdf-python.git
+echo ">>> Installing development languages via mise..."
 
-# Java requires specific version handling
-echo ">>> Installing Java..."
-if ! asdf plugin list | grep -qx "java"; then
-  echo ">>> Installing asdf plugin: java"
-  asdf plugin add java https://github.com/halcyon/asdf-java.git
+# Ensure mise is available before trying to use it
+if ! command -v mise &>/dev/null; then
+  echo "⚠️ mise not found, skipping mise tool installation"
 else
-  echo "✅ asdf plugin java already installed"
+  install_mise_tool go latest
+  install_mise_tool node latest
+  install_mise_tool python latest
+  install_mise_tool java latest
+  install_mise_tool trivy latest
+  install_mise_tool kubectl latest
+  install_mise_tool helm latest
+  install_mise_tool krew latest
 fi
 
-# Get the latest LTS Java version
-LATEST_JAVA=$(asdf list all java | grep -E "openjdk-[0-9]+$" | tail -1 | tr -d ' ')
-if [[ -n "$LATEST_JAVA" ]]; then
-  echo ">>> Installing Java $LATEST_JAVA"
-  if ! asdf list java 2>/dev/null | grep -qx "$LATEST_JAVA"; then
-    asdf install java "$LATEST_JAVA"
-  fi
-  asdf set java "$LATEST_JAVA" || echo "⚠️ Could not set global Java version"
-else
-  echo "⚠️ Could not determine latest Java version, skipping"
+# -------------------------------------
+# Clean up old asdf configuration files
+# -------------------------------------
+echo ">>> Cleaning up old asdf configuration files..."
+if [ -f "$HOME/.tool-versions" ]; then
+  timestamp=$(date +%Y%m%d_%H%M%S)
+  echo ">>> Backing up ~/.tool-versions to ~/.tool-versions.asdf-backup_$timestamp"
+  mv "$HOME/.tool-versions" "$HOME/.tool-versions.asdf-backup_$timestamp"
+  echo "✅ Old asdf .tool-versions file backed up"
 fi
 
-install_asdf_plugin trivy https://github.com/zufardhiyaulhaq/asdf-trivy.git
-install_asdf_plugin kubectl https://github.com/Banno/asdf-kubectl.git
-install_asdf_plugin helm https://github.com/Antiarchitect/asdf-helm.git
-install_asdf_plugin krew https://github.com/nlamirault/asdf-krew.git v0.4.5
+if [ -d "$HOME/.asdf" ]; then
+  echo ">>> Old asdf directory found at ~/.asdf (you can remove it manually if no longer needed)"
+fi
 
 # -------------------------------------
 # Install modern Python package managers (idempotent)
@@ -285,7 +270,11 @@ fi
 # Setup direnv and quiet output
 # -----------------------------------
 echo ">>> Setting up direnv..."
-install_asdf_plugin direnv "" latest
+if command -v mise &>/dev/null; then
+  install_mise_tool direnv latest
+else
+  echo "⚠️ mise not available, skipping direnv installation via mise"
+fi
 
 # Configure direnv properly
 mkdir -p ~/.config/direnv
@@ -293,13 +282,7 @@ touch ~/.config/direnv/direnvrc
 grep -qxF 'export DIRENV_LOG_FORMAT=""' ~/.config/direnv/direnvrc ||
   echo 'export DIRENV_LOG_FORMAT=""' >>~/.config/direnv/direnvrc
 
-# Create .envrc file but don't use problematic asdf integration
-if [ -f ~/.envrc ]; then
-  # Remove problematic 'use asdf' line if it exists
-  grep -v "use asdf" ~/.envrc > ~/.envrc.tmp && mv ~/.envrc.tmp ~/.envrc || rm -f ~/.envrc.tmp
-fi
-
-# Setup direnv with shell integration (skip the problematic asdf setup for now)
+# mise has built-in direnv support, no special integration needed
 if command -v direnv &>/dev/null; then
   echo "✅ direnv installed successfully"
 else
@@ -729,11 +712,11 @@ setup_vscode_settings
 setup_starship_config
 
 # --------------------------------------------
-# Cleanup Homebrew and asdf
+# Cleanup Homebrew and mise
 # --------------------------------------------
-echo ">>> Cleaning up Homebrew and asdf..."
+echo ">>> Cleaning up Homebrew and mise..."
 brew cleanup || true
-asdf reshim || true
+mise reshim || true
 
 # --------------------------------------------
 # Final: run topgrade in fresh zsh shell
