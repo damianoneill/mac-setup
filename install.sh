@@ -209,6 +209,15 @@ if [ -d "$HOME/.asdf" ]; then
   echo ">>> Old asdf directory found at ~/.asdf (you can remove it manually if no longer needed)"
 fi
 
+# Clean up asdf references from .zshrc
+if grep -q "asdf" "$HOME/.zshrc" 2>/dev/null; then
+  echo ">>> Removing old asdf references from .zshrc..."
+  sed -i.asdf-backup "$(date +%Y%m%d_%H%M%S)" \
+    -e '/source.*asdf.*libexec\/asdf.sh/d' \
+    "$HOME/.zshrc"
+  echo "✅ Cleaned up .zshrc (backup created)"
+fi
+
 # -------------------------------------
 # Install modern Python package managers (idempotent)
 # -------------------------------------
@@ -327,6 +336,23 @@ setup_git_config() {
   git config --global alias.fresh "!git fetch --all && git checkout main && git pull origin main"
   git config --global alias.sync "!git fresh && git cleanup"
 
+  # Set up commit message template
+  cat > "$HOME/.gitmessage" << 'TEMPLATE'
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# refs: MSC-
+
+# Type: feat, fix, docs, style, refactor, test, chore
+# Scope: component or module affected
+# Subject: short description (imperative mood)
+# Body: detailed explanation (optional)
+# Footer: MUST include "refs: JIRA-XXX" for issue tracking
+TEMPLATE
+  git config --global commit.template "$HOME/.gitmessage"
+  echo "✅ Git commit template configured"
+
   echo "✅ Git configuration completed"
 }
 
@@ -441,7 +467,13 @@ setup_vscode_settings() {
     "refactor",
     "test",
     "chore"
-  ]
+  ],
+  "conventionalCommits.showEditor": true,
+  "conventionalCommits.autoCommit": false,
+  "conventionalCommits.lineBreak": "\n",
+  "conventionalCommits.promptFooter": true,
+  "git.inputValidationLength": 72,
+  "git.inputValidationSubjectLength": 50
 }
 EOF
 
