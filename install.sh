@@ -60,7 +60,7 @@ fi
 # Install Zsh tools & improvements
 # ----------------------------------------
 echo ">>> Installing Zsh tools & improvements..."
-declare -a zsh_tools=(zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide)
+declare -a zsh_tools=(zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide thefuck tldr httpie eza kubectx)
 for tool in "${zsh_tools[@]}"; do
   if brew list "$tool" &>/dev/null; then
     echo "✅ $tool already installed, skipping"
@@ -85,6 +85,133 @@ add_to_zshrc 'source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-h
 add_to_zshrc 'fpath+=("$(brew --prefix)/share/zsh-completions")'
 add_to_zshrc 'autoload -Uz compinit && compinit'
 
+# Configure shell history
+add_to_zshrc ''
+add_to_zshrc '# Shell History Configuration'
+add_to_zshrc 'HISTSIZE=50000'
+add_to_zshrc 'SAVEHIST=50000'
+add_to_zshrc 'HISTFILE=~/.zsh_history'
+add_to_zshrc 'setopt EXTENDED_HISTORY'
+add_to_zshrc 'setopt HIST_IGNORE_ALL_DUPS'
+add_to_zshrc 'setopt SHARE_HISTORY'
+add_to_zshrc 'setopt HIST_FIND_NO_DUPS'
+add_to_zshrc 'setopt HIST_IGNORE_SPACE'
+
+# Configure navigation and directory options
+add_to_zshrc ''
+add_to_zshrc '# Navigation & Directory Options'
+add_to_zshrc 'setopt AUTO_CD'
+add_to_zshrc 'setopt AUTO_PUSHD'
+add_to_zshrc 'setopt PUSHD_IGNORE_DUPS'
+add_to_zshrc 'setopt PUSHD_SILENT'
+add_to_zshrc 'setopt EXTENDED_GLOB'
+
+# Configure completion options
+add_to_zshrc ''
+add_to_zshrc '# Completion Options'
+add_to_zshrc 'zstyle ":completion:*" matcher-list "m:{a-z}={A-Za-z}"'
+add_to_zshrc 'zstyle ":completion:*" list-colors "${(s.:.)LS_COLORS}"'
+add_to_zshrc 'zstyle ":completion:*" menu select'
+add_to_zshrc 'zstyle ":completion:*:*:kill:*:processes" list-colors "=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01"'
+add_to_zshrc 'zstyle ":completion:*:*:*:*:processes" command "ps -u $USER -o pid,user,comm -w -w"'
+
+# Key bindings
+add_to_zshrc ''
+add_to_zshrc '# Key Bindings'
+add_to_zshrc 'bindkey "^[[A" history-beginning-search-backward'
+add_to_zshrc 'bindkey "^[[B" history-beginning-search-forward'
+add_to_zshrc 'bindkey "^[[1;5C" forward-word'
+add_to_zshrc 'bindkey "^[[1;5D" backward-word'
+
+# Initialize thefuck if available
+add_to_zshrc ''
+add_to_zshrc '# Initialize thefuck'
+add_to_zshrc 'command -v thefuck &>/dev/null && eval $(thefuck --alias)'
+
+# Aliases for modern tools
+add_to_zshrc ''
+add_to_zshrc '# Modern Tool Aliases'
+add_to_zshrc 'alias ls="eza --icons"'
+add_to_zshrc 'alias ll="eza -lh --icons --git"'
+add_to_zshrc 'alias la="eza -lah --icons --git"'
+add_to_zshrc 'alias lt="eza --tree --level=2 --icons"'
+add_to_zshrc 'alias cat="bat --paging=never"'
+add_to_zshrc 'alias catp="bat"'
+add_to_zshrc 'alias find="fd"'
+add_to_zshrc 'alias grep="rg"'
+add_to_zshrc 'alias top="htop"'
+
+# Git aliases
+add_to_zshrc ''
+add_to_zshrc '# Git Aliases'
+add_to_zshrc 'alias g="git"'
+add_to_zshrc 'alias gs="git status"'
+add_to_zshrc 'alias ga="git add"'
+add_to_zshrc 'alias gc="git commit"'
+add_to_zshrc 'alias gp="git push"'
+add_to_zshrc 'alias gl="git pull"'
+add_to_zshrc 'alias gd="git diff"'
+add_to_zshrc 'alias gco="git checkout"'
+add_to_zshrc 'alias gb="git branch"'
+add_to_zshrc 'alias glog="git log --oneline --graph --decorate"'
+add_to_zshrc 'alias glg="lazygit"'
+
+# Docker aliases
+add_to_zshrc ''
+add_to_zshrc '# Docker Aliases'
+add_to_zshrc 'alias d="docker"'
+add_to_zshrc 'alias dc="docker-compose"'
+add_to_zshrc 'alias dps="docker ps"'
+add_to_zshrc 'alias dpsa="docker ps -a"'
+add_to_zshrc 'alias di="docker images"'
+add_to_zshrc 'alias dex="docker exec -it"'
+add_to_zshrc 'alias dlog="docker logs -f"'
+add_to_zshrc 'alias dprune="docker system prune -af --volumes"'
+
+# Kubernetes aliases
+add_to_zshrc ''
+add_to_zshrc '# Kubernetes Aliases'
+add_to_zshrc 'alias k="kubectl"'
+add_to_zshrc 'alias kx="kubectx"'
+add_to_zshrc 'alias kn="kubens"'
+add_to_zshrc 'alias kgp="kubectl get pods"'
+add_to_zshrc 'alias kgs="kubectl get svc"'
+add_to_zshrc 'alias kgd="kubectl get deployments"'
+add_to_zshrc 'alias kl="kubectl logs -f"'
+add_to_zshrc 'alias ke="kubectl exec -it"'
+add_to_zshrc 'alias kdesc="kubectl describe"'
+add_to_zshrc 'alias kapp="kubectl apply -f"'
+add_to_zshrc 'alias kdel="kubectl delete"'
+
+# Utility functions
+add_to_zshrc ''
+add_to_zshrc '# Utility Functions'
+add_to_zshrc 'mkcd() { mkdir -p "$1" && cd "$1"; }'
+add_to_zshrc 'extract() {'
+add_to_zshrc '  if [ -f "$1" ]; then'
+add_to_zshrc '    case "$1" in'
+add_to_zshrc '      *.tar.bz2)   tar xjf "$1"     ;;'
+add_to_zshrc '      *.tar.gz)    tar xzf "$1"     ;;'
+add_to_zshrc '      *.bz2)       bunzip2 "$1"     ;;'
+add_to_zshrc '      *.rar)       unar "$1"        ;;'
+add_to_zshrc '      *.gz)        gunzip "$1"      ;;'
+add_to_zshrc '      *.tar)       tar xf "$1"      ;;'
+add_to_zshrc '      *.tbz2)      tar xjf "$1"     ;;'
+add_to_zshrc '      *.tgz)       tar xzf "$1"     ;;'
+add_to_zshrc '      *.zip)       unzip "$1"       ;;'
+add_to_zshrc '      *.Z)         uncompress "$1"  ;;'
+add_to_zshrc '      *.7z)        7z x "$1"        ;;'
+add_to_zshrc '      *)           echo "Cannot extract $1" ;;'
+add_to_zshrc '    esac'
+add_to_zshrc '  else'
+add_to_zshrc '    echo "$1 is not a valid file"'
+add_to_zshrc '  fi'
+add_to_zshrc '}'
+add_to_zshrc 'port() { lsof -i :"$1"; }'
+add_to_zshrc 'myip() { curl -s ifconfig.me; echo; }'
+add_to_zshrc 'weather() { curl -s "wttr.in/${1:-}"; }'
+add_to_zshrc 'gitclean() { git branch --merged | grep -v "\*" | grep -v "main\|master\|develop" | xargs -n 1 git branch -d; }'
+
 # -------------------------------------
 # Homebrew apps to install
 # -------------------------------------
@@ -95,6 +222,7 @@ declare -a productivity=(
   docker-compose git git-extras git-lfs nmap pass shellcheck telnet
   the_silver_searcher tree wget xquartz jq python-yq
   docker-credential-helper fzf z dive tig lazygit gh 1password-cli valkey
+  unar p7zip
 )
 declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
