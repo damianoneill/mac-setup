@@ -74,8 +74,15 @@ ZSHRC="$HOME/.zshrc"
 
 add_to_zshrc() {
   local line="$1"
-  grep -qxF "$line" "$ZSHRC" || echo "$line" >> "$ZSHRC"
+  grep -qxF "$line" "$ZSHRC" 2>/dev/null || echo "$line" >> "$ZSHRC"
 }
+
+# Check if custom configuration marker exists
+if ! grep -q "# >>> mac-setup custom configuration >>>" "$ZSHRC" 2>/dev/null; then
+  echo "" >> "$ZSHRC"
+  echo "# >>> mac-setup custom configuration >>>" >> "$ZSHRC"
+  echo "# This section is managed by the mac-setup script" >> "$ZSHRC"
+fi
 
 add_to_zshrc 'eval "$(/opt/homebrew/bin/brew shellenv)"'
 add_to_zshrc 'eval "$(starship init zsh)"'
@@ -187,30 +194,42 @@ add_to_zshrc 'alias kdel="kubectl delete"'
 add_to_zshrc ''
 add_to_zshrc '# Utility Functions'
 add_to_zshrc 'mkcd() { mkdir -p "$1" && cd "$1"; }'
-add_to_zshrc 'extract() {'
-add_to_zshrc '  if [ -f "$1" ]; then'
-add_to_zshrc '    case "$1" in'
-add_to_zshrc '      *.tar.bz2)   tar xjf "$1"     ;;'
-add_to_zshrc '      *.tar.gz)    tar xzf "$1"     ;;'
-add_to_zshrc '      *.bz2)       bunzip2 "$1"     ;;'
-add_to_zshrc '      *.rar)       unar "$1"        ;;'
-add_to_zshrc '      *.gz)        gunzip "$1"      ;;'
-add_to_zshrc '      *.tar)       tar xf "$1"      ;;'
-add_to_zshrc '      *.tbz2)      tar xjf "$1"     ;;'
-add_to_zshrc '      *.tgz)       tar xzf "$1"     ;;'
-add_to_zshrc '      *.zip)       unzip "$1"       ;;'
-add_to_zshrc '      *.Z)         uncompress "$1"  ;;'
-add_to_zshrc '      *.7z)        7z x "$1"        ;;'
-add_to_zshrc '      *)           echo "Cannot extract $1" ;;'
-add_to_zshrc '    esac'
-add_to_zshrc '  else'
-add_to_zshrc '    echo "$1 is not a valid file"'
-add_to_zshrc '  fi'
-add_to_zshrc '}'
+
+# Add extract function only if not already present
+if ! grep -q "^extract() {" "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" << 'EOF'
+extract() {
+  if [ -f "$1" ]; then
+    case "$1" in
+      *.tar.bz2)   tar xjf "$1"     ;;
+      *.tar.gz)    tar xzf "$1"     ;;
+      *.bz2)       bunzip2 "$1"     ;;
+      *.rar)       unar "$1"        ;;
+      *.gz)        gunzip "$1"      ;;
+      *.tar)       tar xf "$1"      ;;
+      *.tbz2)      tar xjf "$1"     ;;
+      *.tgz)       tar xzf "$1"     ;;
+      *.zip)       unzip "$1"       ;;
+      *.Z)         uncompress "$1"  ;;
+      *.7z)        7z x "$1"        ;;
+      *)           echo "Cannot extract $1" ;;
+    esac
+  else
+    echo "$1 is not a valid file"
+  fi
+}
+EOF
+fi
+
 add_to_zshrc 'port() { lsof -i :"$1"; }'
 add_to_zshrc 'myip() { curl -s ifconfig.me; echo; }'
 add_to_zshrc 'weather() { curl -s "wttr.in/${1:-}"; }'
 add_to_zshrc 'gitclean() { git branch --merged | grep -v "\*" | grep -v "main\|master\|develop" | xargs -n 1 git branch -d; }'
+
+# Add closing marker if not already present
+if ! grep -q "# <<< mac-setup custom configuration <<<" "$ZSHRC" 2>/dev/null; then
+  echo "# <<< mac-setup custom configuration <<<" >> "$ZSHRC"
+fi
 
 # -------------------------------------
 # Homebrew apps to install
