@@ -250,7 +250,7 @@ declare -a guiApps=(
   docker ollama 1password pgadmin4 redis-insight
 )
 declare -a testTools=(
-  pre-commit vale hadolint k6
+  pre-commit vale hadolint k6 grpcurl
 )
 
 # Install command-line tools with idempotent checking
