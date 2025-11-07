@@ -90,7 +90,6 @@ add_to_zshrc 'eval "$(zoxide init zsh)"'
 add_to_zshrc 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
 add_to_zshrc 'source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh'
 add_to_zshrc 'fpath+=("$(brew --prefix)/share/zsh-completions")'
-add_to_zshrc 'autoload -Uz compinit && compinit'
 
 # Configure shell history
 add_to_zshrc ''
@@ -121,6 +120,9 @@ add_to_zshrc 'zstyle ":completion:*" list-colors "${(s.:.)LS_COLORS}"'
 add_to_zshrc 'zstyle ":completion:*" menu select'
 add_to_zshrc 'zstyle ":completion:*:*:kill:*:processes" list-colors "=(#b) #([0-9]#) ([0-9a-z-]#)*=01;34=0=01"'
 add_to_zshrc 'zstyle ":completion:*:*:*:*:processes" command "ps -u $USER -o pid,user,comm -w -w"'
+add_to_zshrc ''
+add_to_zshrc '# Enable expansion of globs/patterns in completion (for partial directory names)'
+add_to_zshrc 'zstyle '\'':completion:*'\'' completer _expand _complete _ignored _approximate'
 
 # Key bindings
 add_to_zshrc ''
@@ -130,6 +132,11 @@ add_to_zshrc 'bindkey "^[[B" history-beginning-search-forward'
 add_to_zshrc 'bindkey "^[[1;5C" forward-word'
 add_to_zshrc 'bindkey "^[[1;5D" backward-word'
 
+# Initialize completion system AFTER all zstyle configurations
+add_to_zshrc ''
+add_to_zshrc '# Initialize completion system (must be after zstyle configurations)'
+add_to_zshrc 'autoload -Uz compinit && compinit'
+
 # Initialize thefuck if available
 add_to_zshrc ''
 add_to_zshrc '# Initialize thefuck'
@@ -138,10 +145,10 @@ add_to_zshrc 'command -v thefuck &>/dev/null && eval $(thefuck --alias)'
 # Aliases for modern tools
 add_to_zshrc ''
 add_to_zshrc '# Modern Tool Aliases'
-add_to_zshrc 'alias ls="eza --icons"'
-add_to_zshrc 'alias ll="eza -lh --icons --git"'
-add_to_zshrc 'alias la="eza -lah --icons --git"'
-add_to_zshrc 'alias lt="eza --tree --level=2 --icons"'
+add_to_zshrc 'alias ls="eza --icons=auto"'
+add_to_zshrc 'alias ll="eza -lh --icons=auto --git"'
+add_to_zshrc 'alias la="eza -lah --icons=auto --git"'
+add_to_zshrc 'alias lt="eza --tree --level=2 --icons=auto"'
 add_to_zshrc 'alias cat="bat --paging=never"'
 add_to_zshrc 'alias catp="bat"'
 add_to_zshrc 'alias find="fd"'
