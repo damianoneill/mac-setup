@@ -60,7 +60,7 @@ fi
 # Install Zsh tools & improvements
 # ----------------------------------------
 echo ">>> Installing Zsh tools & improvements..."
-declare -a zsh_tools=(zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide thefuck tldr httpie eza kubectx)
+declare -a zsh_tools=(zsh-autosuggestions zsh-syntax-highlighting zsh-completions starship zoxide tldr httpie eza kubectx)
 for tool in "${zsh_tools[@]}"; do
   if brew list "$tool" &>/dev/null; then
     echo "✅ $tool already installed, skipping"
@@ -74,14 +74,16 @@ ZSHRC="$HOME/.zshrc"
 
 add_to_zshrc() {
   local line="$1"
-  grep -qxF "$line" "$ZSHRC" 2>/dev/null || echo "$line" >> "$ZSHRC"
+  grep -qxF "$line" "$ZSHRC" 2>/dev/null || echo "$line" >>"$ZSHRC"
 }
 
 # Check if custom configuration marker exists
 if ! grep -q "# >>> mac-setup custom configuration >>>" "$ZSHRC" 2>/dev/null; then
-  echo "" >> "$ZSHRC"
-  echo "# >>> mac-setup custom configuration >>>" >> "$ZSHRC"
-  echo "# This section is managed by the mac-setup script" >> "$ZSHRC"
+  {
+    echo ""
+    echo "# >>> mac-setup custom configuration >>>"
+    echo "# This section is managed by the mac-setup script"
+  } >>"$ZSHRC"
 fi
 
 add_to_zshrc 'eval "$(/opt/homebrew/bin/brew shellenv)"'
@@ -137,10 +139,19 @@ add_to_zshrc ''
 add_to_zshrc '# Initialize completion system (must be after zstyle configurations)'
 add_to_zshrc 'autoload -Uz compinit && compinit'
 
-# Initialize thefuck if available
+# pay-respects isn't in homebrew-core; install via its official script.
+if command -v pay-respects &>/dev/null; then
+  echo "✅ pay-respects already installed, skipping"
+else
+  echo ">>> Installing pay-respects..."
+  curl -sSfL https://raw.githubusercontent.com/iffse/pay-respects/main/install.sh | sh || echo "⚠️ Failed to install pay-respects"
+fi
+
+# Initialize pay-respects if available (installs to ~/.local/bin)
 add_to_zshrc ''
-add_to_zshrc '# Initialize thefuck'
-add_to_zshrc 'command -v thefuck &>/dev/null && eval $(thefuck --alias)'
+add_to_zshrc '# Initialize pay-respects'
+add_to_zshrc 'export PATH="$HOME/.local/bin:$PATH"'
+add_to_zshrc 'command -v pay-respects &>/dev/null && eval "$(pay-respects zsh --alias)"'
 
 # Aliases for modern tools
 add_to_zshrc ''
@@ -174,7 +185,7 @@ add_to_zshrc 'alias glg="lazygit"'
 add_to_zshrc ''
 add_to_zshrc '# Docker Aliases'
 add_to_zshrc 'alias d="docker"'
-add_to_zshrc 'alias dc="docker-compose"'
+add_to_zshrc 'alias dc="docker compose"'
 add_to_zshrc 'alias dps="docker ps"'
 add_to_zshrc 'alias dpsa="docker ps -a"'
 add_to_zshrc 'alias di="docker images"'
@@ -201,10 +212,11 @@ add_to_zshrc 'alias kdel="kubectl delete"'
 add_to_zshrc ''
 add_to_zshrc '# Utility Functions'
 add_to_zshrc 'mkcd() { mkdir -p "$1" && cd "$1"; }'
+add_to_zshrc 'printclip() { local tmp; tmp="$(mktemp -t clip).pdf"; pbpaste | pandoc -o "$tmp" --pdf-engine=weasyprint && lp "$tmp"; }'
 
 # Add extract function only if not already present
 if ! grep -q "^extract() {" "$ZSHRC" 2>/dev/null; then
-  cat >> "$ZSHRC" << 'EOF'
+  cat >>"$ZSHRC" <<'EOF'
 extract() {
   if [ -f "$1" ]; then
     case "$1" in
@@ -235,20 +247,24 @@ add_to_zshrc 'gitclean() { git branch --merged | grep -v "\*" | grep -v "main\|m
 
 # Add closing marker if not already present
 if ! grep -q "# <<< mac-setup custom configuration <<<" "$ZSHRC" 2>/dev/null; then
-  echo "# <<< mac-setup custom configuration <<<" >> "$ZSHRC"
+  echo "# <<< mac-setup custom configuration <<<" >>"$ZSHRC"
 fi
 
 # -------------------------------------
 # Homebrew apps to install
 # -------------------------------------
 declare -a terminal=(iterm2 tmux neovim)
-declare -a toolsAlternative=(lsd bat fd rg htop coreutils)
+declare -a toolsAlternative=(bat fd rg htop coreutils)
+# chromedriver's cask fails the macOS Gatekeeper check and Homebrew disables
+# it 2026-09-01, so it's deliberately left out below. If you need it, use
+# Selenium Manager (bundled since Selenium 4.6, auto-downloads the matching
+# driver) instead.
 declare -a productivity=(
-  topgrade mise cloc chromedriver universal-ctags ctop curl dos2unix
-  docker-compose git git-extras git-lfs nmap pass shellcheck telnet
-  the_silver_searcher tree wget xquartz jq python-yq
-  docker-credential-helper fzf z dive tig lazygit gh 1password-cli valkey
-  unar p7zip
+  topgrade mise cloc universal-ctags ctop curl dos2unix
+  git git-extras git-lfs nmap pass shellcheck shfmt telnet
+  tree wget xquartz jq yq
+  docker-credential-helper fzf dive tig lazygit gh 1password-cli valkey
+  unar p7zip pandoc weasyprint
 )
 declare -a kubernetes=(k3d k9s)
 declare -a guiApps=(
@@ -260,6 +276,14 @@ declare -a testTools=(
   pre-commit vale hadolint k6 grpcurl
 )
 
+# python-yq (kislyuk/yq) installs a `yq` binary that conflicts with the
+# now-preferred mikefarah/yq (Go, no jq dependency) — remove the old one
+# first so installing `yq` from productivity below doesn't fail.
+if brew list python-yq &>/dev/null; then
+  echo ">>> Removing python-yq (superseded by yq) to avoid a binary conflict..."
+  brew uninstall python-yq || echo "⚠️ Failed to remove python-yq"
+fi
+
 # Install command-line tools with idempotent checking
 echo ">>> Installing Homebrew packages..."
 all_cli_tools=("${terminal[@]}" "${toolsAlternative[@]}" "${productivity[@]}" "${kubernetes[@]}" "${testTools[@]}")
@@ -268,7 +292,7 @@ for tool in "${all_cli_tools[@]}"; do
     echo "✅ $tool already installed, skipping"
   else
     echo ">>> Installing $tool..."
-    brew install --no-quarantine "$tool" || echo "⚠️ Failed to install $tool"
+    brew install "$tool" || echo "⚠️ Failed to install $tool"
   fi
 done
 
@@ -279,7 +303,7 @@ for app in "${guiApps[@]}"; do
     echo "✅ $app already installed, skipping"
   else
     echo ">>> Installing $app..."
-    brew install --cask --no-quarantine "$app" || echo "⚠️ Failed to install $app"
+    brew install --cask "$app" || echo "⚠️ Failed to install $app"
   fi
 done
 
@@ -313,9 +337,16 @@ install_mise_tool() {
 
   echo ">>> Installing $tool@$version with mise..."
 
+  # Resolve aliases like "latest" or "lts" to a concrete version so the
+  # installed-check below actually matches something in `mise list` output.
+  local resolved_version="$version"
+  if [[ ! "$version" =~ ^[0-9] ]]; then
+    resolved_version="$(mise latest "$tool@$version" 2>/dev/null || mise latest "$tool" 2>/dev/null || echo "$version")"
+  fi
+
   # Check if already installed
-  if mise list "$tool" 2>/dev/null | grep -q "$version"; then
-    echo "✅ $tool@$version already installed"
+  if mise list "$tool" 2>/dev/null | grep -q "$resolved_version"; then
+    echo "✅ $tool@$resolved_version already installed"
   else
     if ! mise install "$tool@$version"; then
       echo "⚠️ Failed to install $tool@$version, skipping"
@@ -338,14 +369,26 @@ echo ">>> Installing development languages via mise..."
 if ! command -v mise &>/dev/null; then
   echo "⚠️ mise not found, skipping mise tool installation"
 else
-  install_mise_tool go latest
-  install_mise_tool node latest
-  install_mise_tool python latest
-  install_mise_tool java latest
-  install_mise_tool trivy latest
-  install_mise_tool kubectl latest
-  install_mise_tool helm latest
-  install_mise_tool krew latest
+  # Older mise releases have a known resolver bug that picks a broken
+  # freethreaded Python build ("missing a lib directory"); keep mise
+  # current to avoid it. `brew list` only checks presence, not version,
+  # so this needs an explicit upgrade.
+  echo ">>> Ensuring mise is up to date (was: $(mise --version 2>/dev/null))..."
+  brew upgrade mise || echo "⚠️ Failed to upgrade mise, continuing with $(mise --version 2>/dev/null)"
+  echo ">>> mise version now: $(mise --version 2>/dev/null)"
+
+  # `|| true` matters here: install_mise_tool returns 1 on failure, and as
+  # a bare statement under `set -e` that would silently kill the rest of
+  # the script (git config, VS Code settings, SSH key gen, etc. would never
+  # run). Each call already logs its own ⚠️ warning internally.
+  install_mise_tool go latest || true
+  install_mise_tool node lts || true
+  install_mise_tool python 3.14.7 || true
+  install_mise_tool java 21 || true
+  install_mise_tool trivy latest || true
+  install_mise_tool kubectl latest || true
+  install_mise_tool helm latest || true
+  install_mise_tool krew latest || true
 fi
 
 # -------------------------------------
@@ -380,17 +423,8 @@ if command -v uv &>/dev/null; then
   echo "✅ UV already installed, skipping"
 elif ! command -v uv &>/dev/null; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  add_to_zshrc 'export PATH="$HOME/.cargo/bin:$PATH"'
+  add_to_zshrc 'export PATH="$HOME/.local/bin:$PATH"'
   echo "✅ UV installed successfully"
-fi
-
-echo ">>> Installing Rye Python package manager (legacy support)..."
-if command -v rye &>/dev/null; then
-  echo "✅ Rye already installed, skipping"
-elif ! command -v rye &>/dev/null; then
-  curl -sSf https://rye.astral.sh/get | bash
-  add_to_zshrc 'source "$HOME/.rye/env"'
-  echo "✅ Rye installed successfully"
 fi
 
 # -------------------------------------
@@ -434,7 +468,7 @@ fi
 # -----------------------------------
 echo ">>> Setting up direnv..."
 if command -v mise &>/dev/null; then
-  install_mise_tool direnv latest
+  install_mise_tool direnv latest || true
 else
   echo "⚠️ mise not available, skipping direnv installation via mise"
 fi
@@ -491,12 +525,10 @@ setup_git_config() {
   git config --global alias.sync "!git fresh && git cleanup"
 
   # Set up commit message template
-  cat > "$HOME/.gitmessage" << 'TEMPLATE'
+  cat >"$HOME/.gitmessage" <<'TEMPLATE'
 feat: <subject>
 
 # <body>
-
-refs: MSC-
 
 # Type: feat, fix, docs, style, refactor, test, chore, build
 
@@ -504,7 +536,7 @@ refs: MSC-
 
 # Body: detailed explanation (optional)
 
-# Footer: MUST include "refs: JIRA-XXX" for issue tracking
+# Footer: optional, e.g. "refs: TICKET-123" for issue tracking
 
 TEMPLATE
   git config --global commit.template "$HOME/.gitmessage"
@@ -526,13 +558,14 @@ setup_vscode_settings() {
 
   # Backup existing settings if they exist
   if [[ -f "$settings_file" ]]; then
-    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
     cp "$settings_file" "${settings_file}.backup_${timestamp}"
     echo ">>> Backed up existing VS Code settings to ${settings_file}.backup_${timestamp}"
   fi
 
   # Create VS Code settings.json with sensible defaults
-  cat > "$settings_file" << 'EOF'
+  cat >"$settings_file" <<'EOF'
 {
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
@@ -584,7 +617,6 @@ setup_vscode_settings() {
   "git.confirmSync": false,
   "git.enableSmartCommit": true,
   "python.defaultInterpreterPath": "python",
-  "python.formatting.provider": "none",
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.tabSize": 4,
@@ -646,7 +678,7 @@ setup_starship_config() {
   local starship_config="$HOME/.config/starship.toml"
   mkdir -p "$(dirname "$starship_config")"
 
-  cat > "$starship_config" << 'EOF'
+  cat >"$starship_config" <<'EOF'
 # Starship configuration
 format = """
 $username\
@@ -779,25 +811,9 @@ else
   echo "⚠️ VS Code CLI (code) not found, skipping extension installs"
 fi
 
-# --------------------------------------------
-# Install Powerline fonts if missing (idempotent)
-# --------------------------------------------
-POWERLINE_MARKER="DejaVu Sans Mono for Powerline"
-if fc-list 2>/dev/null | grep -qi "$POWERLINE_MARKER"; then
-  echo "✅ Powerline fonts already installed, skipping"
-else
-  echo ">>> Installing Powerline fonts"
-  if [[ -d /tmp/fonts ]]; then
-    rm -rf /tmp/fonts
-  fi
-  git clone https://github.com/powerline/fonts.git --depth=1 /tmp/fonts
-  cd /tmp/fonts && ./install.sh
-  cd - > /dev/null
-  rm -rf /tmp/fonts
-  echo "✅ Powerline fonts installed"
-fi
-
 # Install Nerd Fonts for better Starship experience (with checking)
+# (Nerd Fonts already include the Powerline glyph set Starship needs, so a
+# separate powerline/fonts install is redundant and has been dropped.)
 echo ">>> Installing Nerd Fonts..."
 # Note: homebrew/cask-fonts is deprecated, but individual font casks still work
 if brew list --cask font-meslo-lg-nerd-font &>/dev/null; then
@@ -856,8 +872,10 @@ else
   GIT_EMAIL=$(ssh-keygen -l -f "${SSH_KEY}.pub" 2>/dev/null | grep -o '[^[:space:]]*@[^[:space:]]*' || echo "")
 fi
 
-# Setup Git user configuration
-if [[ -n "${GIT_EMAIL:-}" ]]; then
+# Setup Git user configuration (skip if already configured)
+if git config --global user.name &>/dev/null && git config --global user.email &>/dev/null; then
+  echo "✅ Git user already configured ($(git config --global user.name) <$(git config --global user.email)>), skipping"
+elif [[ -n "${GIT_EMAIL:-}" ]]; then
   echo ">>> Configuring Git user settings..."
   read -rp "📝 Enter your full name for Git commits: " git_name
   git config --global user.email "$GIT_EMAIL"
@@ -879,6 +897,8 @@ defaults write NSGlobalDomain AppleShowAllExtensions -bool true
 defaults write com.apple.finder AppleShowAllFiles -bool true
 
 # Disable "Are you sure you want to open this application?" dialog
+# NOTE: this suppresses Gatekeeper's warning for apps downloaded from the
+# internet — a real security/convenience tradeoff, not just cosmetic.
 defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 # Set fast key repeat rate

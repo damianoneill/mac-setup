@@ -49,9 +49,9 @@ Your new SSH key will be displayed at the end of installation. Copy the public k
 cat ~/.ssh/id_ed25519.pub
 ```
 
-### 3. Install Docker Desktop
+### 3. Docker Desktop
 
-Docker Desktop must be installed manually from [docker.com](https://www.docker.com/products/docker-desktop/) as it requires GUI installation.
+Docker Desktop is installed automatically via `brew install --cask docker`. Launch it once from Applications to finish setup and accept its license agreement.
 
 ## Key Features
 
@@ -75,11 +75,11 @@ declare -a productivity=(
 
 ### Language Versions
 
-The script installs the latest versions. To pin specific versions:
+The script installs the latest versions via `mise`. To pin specific versions:
 
 ```bash
-asdf install python 3.11.0
-asdf global python 3.11.0
+mise install python@3.11.0
+mise use -g python@3.11.0
 ```
 
 ### VS Code Extensions

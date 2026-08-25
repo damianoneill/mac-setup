@@ -1,0 +1,3 @@
+# SC2016: most of this script writes single-quoted lines verbatim into
+# .zshrc via add_to_zshrc — the lack of expansion is intentional.
+disable=SC2016
