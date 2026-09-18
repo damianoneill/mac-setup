@@ -32,6 +32,18 @@ A comprehensive macOS development environment setup script that installs and con
 
 3. **Restart your terminal** after installation to load all new configurations
 
+### Optional flags
+
+Two behaviours are opt-in via environment variables:
+
+```bash
+# Also disable Gatekeeper download warnings (security tradeoff, off by default)
+DISABLE_GATEKEEPER=1 ./install.sh
+
+# Also run a full `topgrade` system update at the end (off by default)
+RUN_TOPGRADE=1 ./install.sh
+```
+
 ## Post-Installation Steps
 
 ### 1. Configure Git
@@ -57,7 +69,7 @@ Docker Desktop is installed automatically via `brew install --cask docker`. Laun
 
 - **Idempotent**: Safe to run multiple times
 - **Apple Silicon Optimised**: Uses `/opt/homebrew` paths
-- **Modern Defaults**: Replaces traditional Unix tools with improved alternatives
+- **Modern Tools**: Installs modern CLI tools (eza, bat, fd, rg, htop) alongside the standard Unix commands, without shadowing them
 - **Development Ready**: Includes multiple language runtimes and package managers
 - **VS Code Integration**: Pre-installs essential extensions
 
@@ -124,13 +136,17 @@ topgrade
 
 ```
 .
-├── README.md          # This file
-└── install.sh         # Main installation script
+├── README.md                # This file
+├── install.sh               # Main installation script
+├── Makefile                 # lint / format / check targets
+├── .pre-commit-config.yaml  # shellcheck + shfmt pre-commit hooks
+├── .shellcheckrc            # ShellCheck configuration
+└── .gitignore
 ```
 
 ## Requirements
 
-- macOS 10.15+ (Catalina or later)
+- macOS on Apple Silicon (arm64) — the script exits early on other architectures
 - Administrator access (for some system changes)
 - Internet connection
 - ~2GB free disk space

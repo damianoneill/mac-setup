@@ -2,20 +2,35 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Requires Apple Silicon: the Homebrew bootstrap below relies on /opt/homebrew.
+if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
+  echo "❌ mac-setup requires macOS on Apple Silicon (arm64). Detected: $(uname -s)/$(uname -m)" >&2
+  exit 1
+fi
+
+# Opt-in switches (set to 1 to enable). See README for details.
+DISABLE_GATEKEEPER="${DISABLE_GATEKEEPER:-0}"
+RUN_TOPGRADE="${RUN_TOPGRADE:-0}"
+
+# Collected non-fatal install failures, reported in a summary at the end.
+declare -a install_failures=()
+
 # ----------------------------------------
 # Check and install Homebrew (Apple Silicon only)
 # ----------------------------------------
 if ! command -v brew &>/dev/null; then
   echo ">>> Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   eval "$(/opt/homebrew/bin/brew shellenv)"
 else
   echo "✅ Homebrew already installed."
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
+BREW_PREFIX="$(brew --prefix)"
+
 echo ">>> Fixing permissions for Homebrew directories to avoid zsh compinit warnings..."
-chmod g-w /opt/homebrew/share || true
+chmod g-w "$BREW_PREFIX/share" || true
 
 # ----------------------------------------
 # Install updated Bash and Zsh, set Zsh as default
@@ -24,13 +39,13 @@ echo ">>> Installing updated Bash and Zsh..."
 if brew list bash &>/dev/null; then
   echo "✅ bash already installed, skipping"
 else
-  brew install bash || true
+  brew install bash || install_failures+=("bash")
 fi
 
 if brew list zsh &>/dev/null; then
   echo "✅ zsh already installed, skipping"
 else
-  brew install zsh || true
+  brew install zsh || install_failures+=("zsh")
 fi
 
 # Add Homebrew zsh to allowed shells if not already there
@@ -66,7 +81,7 @@ for tool in "${zsh_tools[@]}"; do
     echo "✅ $tool already installed, skipping"
   else
     echo ">>> Installing $tool..."
-    brew install "$tool" || echo "⚠️ Failed to install $tool"
+    brew install "$tool" || install_failures+=("$tool")
   fi
 done
 
@@ -86,7 +101,7 @@ if ! grep -q "# >>> mac-setup custom configuration >>>" "$ZSHRC" 2>/dev/null; th
   } >>"$ZSHRC"
 fi
 
-add_to_zshrc 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+add_to_zshrc "eval \"\$($BREW_PREFIX/bin/brew shellenv)\""
 add_to_zshrc 'eval "$(starship init zsh)"'
 add_to_zshrc 'eval "$(zoxide init zsh)"'
 add_to_zshrc 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
@@ -144,7 +159,7 @@ if command -v pay-respects &>/dev/null; then
   echo "✅ pay-respects already installed, skipping"
 else
   echo ">>> Installing pay-respects..."
-  curl -sSfL https://raw.githubusercontent.com/iffse/pay-respects/main/install.sh | sh || echo "⚠️ Failed to install pay-respects"
+  curl --proto '=https' --tlsv1.2 -sSfL https://raw.githubusercontent.com/iffse/pay-respects/main/install.sh | sh || install_failures+=("pay-respects")
 fi
 
 # Initialize pay-respects if available (installs to ~/.local/bin)
@@ -154,17 +169,15 @@ add_to_zshrc 'export PATH="$HOME/.local/bin:$PATH"'
 add_to_zshrc 'command -v pay-respects &>/dev/null && eval "$(pay-respects zsh --alias)"'
 
 # Aliases for modern tools
+# Note: deliberately not aliasing ls/cat/find/grep/top over the standard
+# binaries — doing so breaks tools and scripts (including coding harnesses)
+# that expect POSIX/GNU flags. Use eza/bat/fd/rg/htop by their real names.
 add_to_zshrc ''
 add_to_zshrc '# Modern Tool Aliases'
-add_to_zshrc 'alias ls="eza --icons=auto"'
 add_to_zshrc 'alias ll="eza -lh --icons=auto --git"'
 add_to_zshrc 'alias la="eza -lah --icons=auto --git"'
 add_to_zshrc 'alias lt="eza --tree --level=2 --icons=auto"'
-add_to_zshrc 'alias cat="bat --paging=never"'
 add_to_zshrc 'alias catp="bat"'
-add_to_zshrc 'alias find="fd"'
-add_to_zshrc 'alias grep="rg"'
-add_to_zshrc 'alias top="htop"'
 
 # Git aliases
 add_to_zshrc ''
@@ -292,7 +305,7 @@ for tool in "${all_cli_tools[@]}"; do
     echo "✅ $tool already installed, skipping"
   else
     echo ">>> Installing $tool..."
-    brew install "$tool" || echo "⚠️ Failed to install $tool"
+    brew install "$tool" || install_failures+=("$tool")
   fi
 done
 
@@ -303,14 +316,14 @@ for app in "${guiApps[@]}"; do
     echo "✅ $app already installed, skipping"
   else
     echo ">>> Installing $app..."
-    brew install --cask "$app" || echo "⚠️ Failed to install $app"
+    brew install --cask "$app" || install_failures+=("$app (cask)")
   fi
 done
 
 # -------------------------------------
 # Add runtime tool support to zshrc
 # -------------------------------------
-add_to_zshrc 'eval "$(/opt/homebrew/bin/mise activate zsh)"'
+add_to_zshrc "eval \"\$($BREW_PREFIX/bin/mise activate zsh)\""
 add_to_zshrc '[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh'
 add_to_zshrc 'eval "$(direnv hook zsh)"'
 
@@ -318,7 +331,7 @@ add_to_zshrc 'eval "$(direnv hook zsh)"'
 # Init tools for current session
 # -------------------------------------
 if command -v mise &>/dev/null; then
-  eval "$(/opt/homebrew/bin/mise activate bash)"
+  eval "$("$BREW_PREFIX/bin/mise" activate bash)"
 else
   echo "⚠️ mise not yet available, skipping activation for current session"
 fi
@@ -344,8 +357,10 @@ install_mise_tool() {
     resolved_version="$(mise latest "$tool@$version" 2>/dev/null || mise latest "$tool" 2>/dev/null || echo "$version")"
   fi
 
-  # Check if already installed
-  if mise list "$tool" 2>/dev/null | grep -q "$resolved_version"; then
+  # Check if already installed. -Fw matches the version as a whole
+  # whitespace-delimited field, so 3.1 doesn't match 3.14 and dots aren't
+  # treated as regex wildcards.
+  if mise list "$tool" 2>/dev/null | grep -qFw "$resolved_version"; then
     echo "✅ $tool@$resolved_version already installed"
   else
     if ! mise install "$tool@$version"; then
@@ -421,10 +436,9 @@ fi
 echo ">>> Installing UV Python package manager (recommended)..."
 if command -v uv &>/dev/null; then
   echo "✅ UV already installed, skipping"
-elif ! command -v uv &>/dev/null; then
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  add_to_zshrc 'export PATH="$HOME/.local/bin:$PATH"'
-  echo "✅ UV installed successfully"
+else
+  # Prefer Homebrew (signed, checksum-verified) over piping a remote script.
+  brew install uv && echo "✅ UV installed successfully" || install_failures+=("uv")
 fi
 
 # -------------------------------------
@@ -433,20 +447,9 @@ fi
 echo ">>> Installing Ruff Python linter and formatter..."
 if command -v ruff &>/dev/null; then
   echo "✅ Ruff already installed, skipping"
-elif command -v uv &>/dev/null; then
-  # Install with uv tool (recommended by Ruff)
-  uv tool install ruff@latest
-  echo "✅ Ruff installed successfully with uv tool"
-elif command -v curl &>/dev/null; then
-  # Install with the standalone installer
-  curl -LsSf https://astral.sh/ruff/install.sh | sh
-  echo "✅ Ruff installed successfully with standalone installer"
-elif command -v brew &>/dev/null; then
-  # Fallback to Homebrew
-  brew install ruff
-  echo "✅ Ruff installed successfully with Homebrew"
 else
-  echo "⚠️ Could not install Ruff - no compatible installation method found"
+  # Prefer Homebrew (signed, checksum-verified) over piping a remote script.
+  brew install ruff && echo "✅ Ruff installed successfully" || install_failures+=("ruff")
 fi
 
 # -----------------------------------
@@ -524,8 +527,11 @@ setup_git_config() {
   git config --global alias.fresh "!git fetch --all && git checkout main && git pull origin main"
   git config --global alias.sync "!git fresh && git cleanup"
 
-  # Set up commit message template
-  cat >"$HOME/.gitmessage" <<'TEMPLATE'
+  # Set up commit message template (preserve any existing customised template)
+  if [[ -f "$HOME/.gitmessage" ]]; then
+    echo "✅ ~/.gitmessage already exists, leaving it untouched"
+  else
+    cat >"$HOME/.gitmessage" <<'TEMPLATE'
 feat: <subject>
 
 # <body>
@@ -539,6 +545,7 @@ feat: <subject>
 # Footer: optional, e.g. "refs: TICKET-123" for issue tracking
 
 TEMPLATE
+  fi
   git config --global commit.template "$HOME/.gitmessage"
   echo "✅ Git commit template configured"
 
@@ -831,7 +838,10 @@ if [ ! -f "$NVIM_DIR/lua/lazyvim/init.lua" ]; then
   echo ">>> Installing LazyVim..."
   timestamp=$(date +%Y%m%d_%H%M%S)
   [[ -d "$NVIM_DIR" ]] && mv "$NVIM_DIR" "${NVIM_DIR}_backup_$timestamp"
-  rm -rf ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim
+  # Move (not delete) existing Neovim data so a prior config can be restored.
+  for nvim_data in "$HOME/.local/share/nvim" "$HOME/.local/state/nvim" "$HOME/.cache/nvim"; do
+    [[ -d "$nvim_data" ]] && mv "$nvim_data" "${nvim_data}_backup_$timestamp"
+  done
   git clone https://github.com/LazyVim/starter "$NVIM_DIR"
   nvim --headless "+Lazy! sync" +qa
 else
@@ -896,10 +906,15 @@ defaults write NSGlobalDomain AppleShowAllExtensions -bool true
 # Show hidden files by default
 defaults write com.apple.finder AppleShowAllFiles -bool true
 
-# Disable "Are you sure you want to open this application?" dialog
-# NOTE: this suppresses Gatekeeper's warning for apps downloaded from the
-# internet — a real security/convenience tradeoff, not just cosmetic.
-defaults write com.apple.LaunchServices LSQuarantine -bool false
+# Disable "Are you sure you want to open this application?" dialog.
+# Opt-in only: this suppresses Gatekeeper's warning for internet-downloaded
+# apps, a real security tradeoff. Enable with DISABLE_GATEKEEPER=1.
+if [[ "$DISABLE_GATEKEEPER" == "1" ]]; then
+  echo ">>> DISABLE_GATEKEEPER=1 set — disabling Gatekeeper download warnings..."
+  defaults write com.apple.LaunchServices LSQuarantine -bool false
+else
+  echo "✅ Leaving Gatekeeper download warnings enabled (set DISABLE_GATEKEEPER=1 to change)"
+fi
 
 # Set fast key repeat rate
 defaults write NSGlobalDomain KeyRepeat -int 3
@@ -928,10 +943,26 @@ brew cleanup || true
 mise reshim || true
 
 # --------------------------------------------
-# Final: run topgrade in fresh zsh shell
+# Final: optionally run topgrade in fresh zsh shell
 # --------------------------------------------
-echo ">>> Running topgrade in fresh login shell..."
-"$BREW_ZSH" -l -c "topgrade"
+if [[ "$RUN_TOPGRADE" == "1" ]]; then
+  echo ">>> RUN_TOPGRADE=1 set — running topgrade in fresh login shell..."
+  "$BREW_ZSH" -l -c "topgrade" || echo "⚠️ topgrade exited non-zero"
+else
+  echo "✅ Skipping topgrade (set RUN_TOPGRADE=1 to run a full system update now)"
+fi
+
+# --------------------------------------------
+# Report any non-fatal install failures before declaring success
+# --------------------------------------------
+if ((${#install_failures[@]} > 0)); then
+  echo ""
+  echo "⚠️ The following installs failed and may need attention:"
+  for failed in "${install_failures[@]}"; do
+    echo "   - $failed"
+  done
+  exit 1
+fi
 
 # --------------------------------------------
 # Manual step reminder
